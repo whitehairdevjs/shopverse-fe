@@ -22,19 +22,24 @@ export default function Header() {
             </div>
           </div>
           
-          {/* 우측 메뉴 */}
-          <div className="flex items-center space-x-6">
-                         <button className="text-gray-700 hover:text-orange-500 transition-colors">
-               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-               </svg>
-             </button>
-             <button className="text-gray-700 hover:text-orange-500 transition-colors">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m6 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01" />
-              </svg>
-            </button>
-          </div>
+                           {/* 우측 메뉴 */}
+                 <div className="flex items-center space-x-6">
+                   <button className="text-gray-700 hover:text-orange-500 transition-colors">
+                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                     </svg>
+                   </button>
+                   <button className="text-gray-700 hover:text-orange-500 transition-colors">
+                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m6 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01" />
+                     </svg>
+                   </button>
+                                       <a href="/login" className="text-gray-700 hover:text-orange-500 transition-colors">
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                      </svg>
+                    </a>
+                 </div>
         </div>
         
         {/* 카테고리 네비게이션 */}
@@ -45,6 +50,7 @@ export default function Header() {
            <a href="/order" className="text-sm text-gray-700 hover:text-orange-500 transition-colors">주문</a>
            <a href="/mypage" className="text-sm text-gray-700 hover:text-orange-500 transition-colors">마이페이지</a>
            <a href="/live" className="text-sm text-gray-700 hover:text-orange-500 transition-colors">라이브</a>
+           <a href="/login" className="text-sm text-gray-700 hover:text-orange-500 transition-colors">로그인</a>
          </nav>
       </div>
     </header>

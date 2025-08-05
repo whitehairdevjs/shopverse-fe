@@ -1,23 +1,52 @@
 'use client';
 
 import { useState } from 'react';
+import Toast from '../../../components/common/Toast';
+import { api } from '../../../utils/api';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [toast, setToast] = useState<{
+    message: string;
+    type: 'success' | 'error' | 'warning' | 'info';
+    isVisible: boolean;
+  }>({
+    message: '',
+    type: 'info',
+    isVisible: false,
+  });
+
+  const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'error') => {
+    setToast({
+      message,
+      type,
+      isVisible: true,
+    });
+  };
+
+  const hideToast = () => {
+    setToast(prev => ({ ...prev, isVisible: false }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     setIsLoading(true);
     
-    // 실제 구현에서는 API 호출을 통해 비밀번호 재설정 이메일을 보냅니다
     try {
-      // 여기에 실제 API 호출 로직을 추가합니다
-      await new Promise(resolve => setTimeout(resolve, 1000)); // 시뮬레이션
-      setIsSubmitted(true);
+      const response = await api.member.forgotPassword({ email });
+      
+      if (response.success) {
+        setIsSubmitted(true);
+      } else {
+        showToast(response.error || '비밀번호 재설정 이메일 전송에 실패했습니다.');
+      }
     } catch (error) {
       console.error('비밀번호 재설정 이메일 전송 실패:', error);
+      showToast('서버 연결에 실패했습니다. 다시 시도해주세요.');
     } finally {
       setIsLoading(false);
     }
@@ -122,8 +151,17 @@ export default function ForgotPasswordPage() {
               로그인 페이지로 돌아가기
             </a>
           </div>
-        </form>
-      </div>
-    </div>
-  );
-} 
+                 </form>
+       </div>
+       
+       {/* 토스트 알림 */}
+       <Toast
+         message={toast.message}
+         type={toast.type}
+         isVisible={toast.isVisible}
+         onClose={hideToast}
+         duration={4000}
+       />
+     </div>
+   );
+ } 

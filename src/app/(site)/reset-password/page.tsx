@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import Toast from '../../../components/common/Toast';
+import { api } from '../../../utils/api';
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState('');
@@ -8,6 +10,27 @@ export default function ResetPasswordPage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [toast, setToast] = useState<{
+    message: string;
+    type: 'success' | 'error' | 'warning' | 'info';
+    isVisible: boolean;
+  }>({
+    message: '',
+    type: 'info',
+    isVisible: false,
+  });
+
+  const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'error') => {
+    setToast({
+      message,
+      type,
+      isVisible: true,
+    });
+  };
+
+  const hideToast = () => {
+    setToast(prev => ({ ...prev, isVisible: false }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -15,25 +38,31 @@ export default function ResetPasswordPage() {
 
     // 비밀번호 유효성 검사
     if (password.length < 8) {
-      setError('비밀번호는 최소 8자 이상이어야 합니다.');
+      showToast('비밀번호는 최소 8자 이상이어야 합니다.');
       return;
     }
 
     if (password !== confirmPassword) {
-      setError('비밀번호가 일치하지 않습니다.');
+      showToast('비밀번호가 일치하지 않습니다.');
       return;
     }
 
     setIsLoading(true);
     
-    // 실제 구현에서는 API 호출을 통해 비밀번호를 재설정합니다
     try {
-      // 여기에 실제 API 호출 로직을 추가합니다
-      await new Promise(resolve => setTimeout(resolve, 1000)); // 시뮬레이션
-      setIsSubmitted(true);
+      const response = await api.member.resetPassword({
+        password: password,
+        confirmPassword: confirmPassword,
+      });
+      
+      if (response.success) {
+        setIsSubmitted(true);
+      } else {
+        showToast(response.error || '비밀번호 재설정에 실패했습니다.');
+      }
     } catch (error) {
       console.error('비밀번호 재설정 실패:', error);
-      setError('비밀번호 재설정에 실패했습니다. 다시 시도해주세요.');
+      showToast('서버 연결에 실패했습니다. 다시 시도해주세요.');
     } finally {
       setIsLoading(false);
     }
@@ -87,23 +116,8 @@ export default function ResetPasswordPage() {
           </p>
         </div>
         
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm text-red-800">{error}</p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="space-y-4">
+                 <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+           <div className="space-y-4">
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                 새 비밀번호
@@ -167,8 +181,17 @@ export default function ResetPasswordPage() {
               로그인 페이지로 돌아가기
             </a>
           </div>
-        </form>
-      </div>
-    </div>
-  );
-} 
+                 </form>
+       </div>
+       
+       {/* 토스트 알림 */}
+       <Toast
+         message={toast.message}
+         type={toast.type}
+         isVisible={toast.isVisible}
+         onClose={hideToast}
+         duration={4000}
+       />
+     </div>
+   );
+ } 

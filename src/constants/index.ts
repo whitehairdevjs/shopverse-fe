@@ -1,6 +1,57 @@
-// API 관련 상수
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
-export const API_TIMEOUT = 10000; // 10초
+// API Configuration
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8081';
+
+// API Endpoints
+export const API_ENDPOINTS = {
+  // Member related endpoints
+  MEMBER: {
+    SIGNUP: '/member/signup',
+    LOGIN: '/member/login',
+    LOGOUT: '/member/logout',
+    PROFILE: '/member/profile',
+    UPDATE_PROFILE: '/member/profile/update',
+    FORGOT_PASSWORD: '/member/forgot-password',
+    RESET_PASSWORD: '/member/reset-password',
+  },
+  
+  // Product related endpoints
+  PRODUCT: {
+    LIST: '/products',
+    DETAIL: '/products/:id',
+    SEARCH: '/products/search',
+  },
+  
+  // Cart related endpoints
+  CART: {
+    LIST: '/cart',
+    ADD: '/cart/add',
+    UPDATE: '/cart/update',
+    REMOVE: '/cart/remove',
+    CLEAR: '/cart/clear',
+  },
+  
+  // Order related endpoints
+  ORDER: {
+    CREATE: '/orders',
+    LIST: '/orders',
+    DETAIL: '/orders/:id',
+    CANCEL: '/orders/:id/cancel',
+  },
+} as const;
+
+// HTTP Methods
+export const HTTP_METHODS = {
+  GET: 'GET',
+  POST: 'POST',
+  PUT: 'PUT',
+  DELETE: 'DELETE',
+  PATCH: 'PATCH',
+} as const;
+
+// Common HTTP Headers
+export const DEFAULT_HEADERS = {
+  'Content-Type': 'application/json',
+} as const;
 
 // 페이지네이션 상수
 export const DEFAULT_PAGE_SIZE = 20;

@@ -73,6 +73,26 @@ export default function SignupPage() {
     marketing: false,
   });
 
+  const [loginIdStatus, setLoginIdStatus] = useState<{
+    isChecking: boolean;
+    isAvailable: boolean | null;
+    message: string;
+  }>({
+    isChecking: false,
+    isAvailable: null,
+    message: '',
+  });
+
+  const [emailStatus, setEmailStatus] = useState<{
+    isChecking: boolean;
+    isAvailable: boolean | null;
+    message: string;
+  }>({
+    isChecking: false,
+    isAvailable: null,
+    message: '',
+  });
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     
@@ -87,6 +107,15 @@ export default function SignupPage() {
         ...prev,
         [name]: value
       }));
+
+      // 이메일이 변경되면 중복확인 상태 초기화
+      if (name === 'email') {
+        setEmailStatus({
+          isChecking: false,
+          isAvailable: null,
+          message: '',
+        });
+      }
     }
   };
 
@@ -95,6 +124,41 @@ export default function SignupPage() {
     const allowedChars = /[a-zA-Z0-9_]/;
     if (!allowedChars.test(e.key) && e.key !== 'Backspace' && e.key !== 'Delete' && e.key !== 'Tab') {
       e.preventDefault();
+    }
+  };
+
+  const handleLoginIdInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    
+    // 한글 문자 제거
+    const filteredValue = value.replace(/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/g, '');
+    
+    setFormData(prev => ({
+      ...prev,
+      [name]: filteredValue
+    }));
+
+    // 아이디가 변경되면 중복확인 상태 초기화 및 실시간 검증
+    if (name === 'loginId') {
+      if (filteredValue.length > 0 && filteredValue.length < 5) {
+        setLoginIdStatus({
+          isChecking: false,
+          isAvailable: null,
+          message: '아이디는 5자 이상으로 입력해주세요.',
+        });
+      } else if (filteredValue.length === 0) {
+        setLoginIdStatus({
+          isChecking: false,
+          isAvailable: null,
+          message: '',
+        });
+      } else {
+        setLoginIdStatus({
+          isChecking: false,
+          isAvailable: null,
+          message: '',
+        });
+      }
     }
   };
 
@@ -138,9 +202,147 @@ export default function SignupPage() {
     setErrorModal(prev => ({ ...prev, isOpen: false }));
   };
 
+  const checkLoginIdAvailability = async (loginId: string) => {
+    if (!loginId || loginId.length < 5) {
+      setLoginIdStatus({
+        isChecking: false,
+        isAvailable: null,
+        message: '',
+      });
+      return;
+    }
+
+    setLoginIdStatus(prev => ({
+      ...prev,
+      isChecking: true,
+      message: '',
+    }));
+
+    try {
+      const response = await api.member.checkLoginId(loginId);
+      
+      console.log('중복확인 응답:', response); // 디버깅용
+      
+      if (response.success) {
+        console.log('message 값:', response.message, '타입:', typeof response.message); // 디버깅용
+        
+        // message가 "true"이면 중복된 아이디
+        if (response.message === "true") {
+          setLoginIdStatus({
+            isChecking: false,
+            isAvailable: false,
+            message: '이미 사용 중인 아이디입니다.',
+          });
+        } else if (response.message === "false") {
+          setLoginIdStatus({
+            isChecking: false,
+            isAvailable: true,
+            message: '사용 가능한 아이디입니다.',
+          });
+        } else {
+          // message가 예상과 다른 경우 기본 처리
+          console.log('예상과 다른 message 값:', response.message); // 디버깅용
+          setLoginIdStatus({
+            isChecking: false,
+            isAvailable: false,
+            message: '중복확인 결과를 확인할 수 없습니다.',
+          });
+        }
+      } else {
+        setLoginIdStatus({
+          isChecking: false,
+          isAvailable: false,
+          message: '서버 에러가 발생 하였습니다. 잠시후 다시 시도해주세요.',
+        });
+      }
+    } catch (error) {
+      console.error('아이디 중복확인 에러:', error);
+      setLoginIdStatus({
+        isChecking: false,
+        isAvailable: false,
+        message: '중복확인 중 오류가 발생했습니다.',
+      });
+    }
+  };
+
+  const handleLoginIdBlur = () => {
+    if (formData.loginId.trim()) {
+      checkLoginIdAvailability(formData.loginId);
+    }
+  };
+
+  const checkEmailAvailability = async (email: string) => {
+    if (!email || !email.includes('@')) {
+      setEmailStatus({
+        isChecking: false,
+        isAvailable: null,
+        message: '',
+      });
+      return;
+    }
+
+    setEmailStatus(prev => ({
+      ...prev,
+      isChecking: true,
+      message: '',
+    }));
+
+    try {
+      const response = await api.member.checkEmail(email);
+      
+      console.log('이메일 중복확인 응답:', response); // 디버깅용
+      
+      if (response.success) {
+        console.log('이메일 message 값:', response.message, '타입:', typeof response.message); // 디버깅용
+        
+        // message가 "true"이면 중복된 이메일
+        if (response.message === "true") {
+          setEmailStatus({
+            isChecking: false,
+            isAvailable: false,
+            message: '이미 사용 중인 이메일입니다.',
+          });
+        } else if (response.message === "false") {
+          setEmailStatus({
+            isChecking: false,
+            isAvailable: true,
+            message: '사용 가능한 이메일입니다.',
+          });
+        } else {
+          // message가 예상과 다른 경우 기본 처리
+          console.log('예상과 다른 이메일 message 값:', response.message); // 디버깅용
+          setEmailStatus({
+            isChecking: false,
+            isAvailable: false,
+            message: '중복확인 결과를 확인할 수 없습니다.',
+          });
+        }
+      } else {
+        setEmailStatus({
+          isChecking: false,
+          isAvailable: false,
+          message: '서버 에러가 발생 하였습니다. 잠시후 다시 시도해주세요.',
+        });
+      }
+    } catch (error) {
+      console.error('이메일 중복확인 에러:', error);
+      setEmailStatus({
+        isChecking: false,
+        isAvailable: false,
+        message: '중복확인 중 오류가 발생했습니다.',
+      });
+    }
+  };
+
+  const handleEmailBlur = () => {
+    if (formData.email.trim()) {
+      checkEmailAvailability(formData.email);
+    }
+  };
+
   const validateForm = () => {
-    if (!formData.loginId || formData.loginId.length < 8) {
-      showToast('아이디는 8자 이상이어야 합니다.');
+    if (!formData.loginId || formData.loginId.length < 5) {
+      showToast('아이디는 5자 이상이어야 합니다.');
       return false;
     }
     
@@ -148,6 +350,28 @@ export default function SignupPage() {
     const loginIdPattern = /^[a-zA-Z0-9_]+$/;
     if (!loginIdPattern.test(formData.loginId)) {
       showToast('아이디는 영어, 숫자, 언더스코어(_)만 사용할 수 있습니다.');
+      return false;
+    }
+
+    // 아이디 중복확인 검사
+    if (loginIdStatus.isAvailable === false) {
+      showToast('이미 사용 중인 아이디입니다. 다른 아이디를 입력해주세요.');
+      return false;
+    }
+
+    if (loginIdStatus.isAvailable === null && formData.loginId.trim()) {
+      showToast('아이디 중복확인이 필요합니다.');
+      return false;
+    }
+
+    // 이메일 중복확인 검사
+    if (emailStatus.isAvailable === false) {
+      showToast('이미 사용 중인 이메일입니다. 다른 이메일을 입력해주세요.');
+      return false;
+    }
+
+    if (emailStatus.isAvailable === null && formData.email.trim()) {
+      showToast('이메일 중복확인이 필요합니다.');
       return false;
     }
     
@@ -286,18 +510,50 @@ export default function SignupPage() {
               <label htmlFor="login_id" className="block text-sm font-medium text-gray-700">
                 아이디 *
               </label>
-                             <input
-                 id="loginId"
-                 name="loginId"
-                 type="text"
-                 autoComplete="username"
-                 value={formData.loginId}
-                 onChange={handleInputChange}
-                 onKeyPress={handleLoginIdKeyPress}
-                 pattern="[a-zA-Z0-9_]+"
-                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500"
-                 placeholder="아이디를 입력하세요 (영어, 숫자, _만 사용, 8자 이상)"
-               />
+                                             <input
+                  id="loginId"
+                  name="loginId"
+                  type="text"
+                  autoComplete="username"
+                  value={formData.loginId}
+                  onChange={handleLoginIdInput}
+                  onKeyPress={handleLoginIdKeyPress}
+                  onBlur={handleLoginIdBlur}
+                  pattern="[a-zA-Z0-9_]+"
+                  maxLength={20}
+                  className={`mt-1 block w-full px-3 py-2 border rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500 ${
+                    loginIdStatus.isAvailable === true 
+                      ? 'border-green-300 bg-green-50' 
+                      : loginIdStatus.isAvailable === false 
+                      ? 'border-red-300 bg-red-50' 
+                                           : formData.loginId.length > 0 && formData.loginId.length < 5
+                     ? 'border-orange-300 bg-orange-50'
+                      : 'border-gray-300'
+                  }`}
+                                     placeholder="아이디를 입력하세요 (영어, 숫자, _만 사용, 5-20자)"
+                />
+               {loginIdStatus.isChecking && (
+                 <div className="mt-1 flex items-center text-sm text-blue-600">
+                   <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                   </svg>
+                   중복확인 중...
+                 </div>
+               )}
+                               {loginIdStatus.message && !loginIdStatus.isChecking && (
+                  <div className={`mt-1 text-sm ${
+                    loginIdStatus.isAvailable === true 
+                      ? 'text-green-600' 
+                      : loginIdStatus.isAvailable === false 
+                      ? 'text-red-600' 
+                                           : formData.loginId.length > 0 && formData.loginId.length < 5
+                     ? 'text-orange-600'
+                      : 'text-gray-600'
+                  }`}>
+                    {loginIdStatus.message}
+                  </div>
+                )}
             </div>
 
             <div>
@@ -331,21 +587,48 @@ export default function SignupPage() {
               />
             </div>
 
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                이메일 *
-              </label>
-                             <input
-                 id="email"
-                 name="email"
-                 type="email"
-                 autoComplete="email"
-                 value={formData.email}
-                 onChange={handleInputChange}
-                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500"
-                 placeholder="이메일을 입력하세요"
-               />
-            </div>
+                         <div>
+               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                 이메일 *
+               </label>
+                              <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  onBlur={handleEmailBlur}
+                  className={`mt-1 block w-full px-3 py-2 border rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500 ${
+                    emailStatus.isAvailable === true 
+                      ? 'border-green-300 bg-green-50' 
+                      : emailStatus.isAvailable === false 
+                      ? 'border-red-300 bg-red-50' 
+                      : 'border-gray-300'
+                  }`}
+                  placeholder="이메일을 입력하세요"
+                />
+                {emailStatus.isChecking && (
+                  <div className="mt-1 flex items-center text-sm text-blue-600">
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    중복확인 중...
+                  </div>
+                )}
+                {emailStatus.message && !emailStatus.isChecking && (
+                  <div className={`mt-1 text-sm ${
+                    emailStatus.isAvailable === true 
+                      ? 'text-green-600' 
+                      : emailStatus.isAvailable === false 
+                      ? 'text-red-600' 
+                      : 'text-gray-600'
+                  }`}>
+                    {emailStatus.message}
+                  </div>
+                )}
+             </div>
             
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">

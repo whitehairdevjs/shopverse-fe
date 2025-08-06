@@ -12,6 +12,8 @@ export const API_ENDPOINTS = {
     UPDATE_PROFILE: '/member/profile/update',
     FORGOT_PASSWORD: '/member/forgot-password',
     RESET_PASSWORD: '/member/reset-password',
+    CHECK_LOGIN_ID: '/member/check-login-id',
+    CHECK_EMAIL: '/member/check-email',
   },
   
   // Product related endpoints

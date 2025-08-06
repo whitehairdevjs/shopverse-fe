@@ -221,12 +221,7 @@ export default function SignupPage() {
     try {
       const response = await api.member.checkLoginId(loginId);
       
-      console.log('중복확인 응답:', response); // 디버깅용
-      
       if (response.success) {
-        console.log('message 값:', response.message, '타입:', typeof response.message); // 디버깅용
-        
-        // message가 "true"이면 중복된 아이디
         if (response.message === "true") {
           setLoginIdStatus({
             isChecking: false,
@@ -241,7 +236,6 @@ export default function SignupPage() {
           });
         } else {
           // message가 예상과 다른 경우 기본 처리
-          console.log('예상과 다른 message 값:', response.message); // 디버깅용
           setLoginIdStatus({
             isChecking: false,
             isAvailable: false,
@@ -290,12 +284,7 @@ export default function SignupPage() {
     try {
       const response = await api.member.checkEmail(email);
       
-      console.log('이메일 중복확인 응답:', response); // 디버깅용
-      
       if (response.success) {
-        console.log('이메일 message 값:', response.message, '타입:', typeof response.message); // 디버깅용
-        
-        // message가 "true"이면 중복된 이메일
         if (response.message === "true") {
           setEmailStatus({
             isChecking: false,
@@ -309,8 +298,6 @@ export default function SignupPage() {
             message: '사용 가능한 이메일입니다.',
           });
         } else {
-          // message가 예상과 다른 경우 기본 처리
-          console.log('예상과 다른 이메일 message 값:', response.message); // 디버깅용
           setEmailStatus({
             isChecking: false,
             isAvailable: false,

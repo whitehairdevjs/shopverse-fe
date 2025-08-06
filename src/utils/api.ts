@@ -82,7 +82,12 @@ class ApiClient {
 
       return {
         success: true,
-        data: responseData,
+        data: responseData.data,
+        message: responseData.message,
+        timestamp: responseData.timestamp,
+        status: responseData.status,
+        error: responseData.error,
+        details: responseData.details,
       };
     } catch (error) {
       clearTimeout(timeoutId);
@@ -147,6 +152,8 @@ export const api = {
     updateProfile: (data: any) => apiClient.put(API_ENDPOINTS.MEMBER.UPDATE_PROFILE, data),
     forgotPassword: (data: any) => apiClient.post(API_ENDPOINTS.MEMBER.FORGOT_PASSWORD, data),
     resetPassword: (data: any) => apiClient.post(API_ENDPOINTS.MEMBER.RESET_PASSWORD, data),
+    checkLoginId: (loginId: string) => apiClient.get(`${API_ENDPOINTS.MEMBER.CHECK_LOGIN_ID}?loginId=${encodeURIComponent(loginId)}`),
+    checkEmail: (email: string) => apiClient.get(`${API_ENDPOINTS.MEMBER.CHECK_EMAIL}?email=${encodeURIComponent(email)}`),
   },
 
   // Product API

@@ -250,11 +250,11 @@ export default function SignupPage() {
         });
       }
     } catch (error) {
-      console.error('아이디 중복확인 에러:', error);
+      // 아이디 중복확인 에러 처리
       setLoginIdStatus({
         isChecking: false,
         isAvailable: false,
-        message: '중복확인 중 오류가 발생했습니다.',
+        message: '아이디 중복확인 중 오류가 발생했습니다.',
       });
     }
   };
@@ -312,11 +312,11 @@ export default function SignupPage() {
         });
       }
     } catch (error) {
-      console.error('이메일 중복확인 에러:', error);
+      // 이메일 중복확인 에러 처리
       setEmailStatus({
         isChecking: false,
         isAvailable: false,
-        message: '중복확인 중 오류가 발생했습니다.',
+        message: '이메일 중복확인 중 오류가 발생했습니다.',
       });
     }
   };
@@ -438,7 +438,7 @@ export default function SignupPage() {
         }
       }
     } catch (error) {
-      console.error('회원가입 에러:', error);
+      // 회원가입 에러 처리
       showToast('서버 연결에 실패했습니다. 다시 시도해주세요.');
     } finally {
       setIsLoading(false);

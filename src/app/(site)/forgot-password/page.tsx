@@ -45,8 +45,8 @@ export default function ForgotPasswordPage() {
         showToast(response.error || '비밀번호 재설정 이메일 전송에 실패했습니다.');
       }
     } catch (error) {
-      console.error('비밀번호 재설정 이메일 전송 실패:', error);
-      showToast('서버 연결에 실패했습니다. 다시 시도해주세요.');
+      // 비밀번호 재설정 이메일 전송 실패 처리
+      setError('이메일 전송 중 오류가 발생했습니다.');
     } finally {
       setIsLoading(false);
     }

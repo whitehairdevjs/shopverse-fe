@@ -1,5 +1,6 @@
 import { API_BASE_URL, API_ENDPOINTS, HTTP_METHODS, DEFAULT_HEADERS } from '../constants';
-import { useState, useEffect } from 'react';
+import { useAuthStore } from '../stores/authStore';
+import type { User } from '../stores/authStore';
 
 // API 응답 타입
 export interface ApiResponse<T = any> {
@@ -113,24 +114,17 @@ export const cookieUtils = {
 const tokenUtils = {
   // 모든 토큰 삭제
   clearAllTokens: () => {
-    cookieUtils.deleteCookie('accessToken');
+    // Zustand store에서 access token 제거
+    useAuthStore.getState().clearAuth();
+    // refresh token은 여전히 httpOnly 쿠키로 관리
     cookieUtils.deleteCookie('refreshToken');
   },
 
   // 토큰 갱신 시도
   tryRefreshToken: async (): Promise<boolean> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/member/reissue-access-token`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: DEFAULT_HEADERS,
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        return data.success;
-      }
-      return false;
+      const response = await api.member.refreshToken();
+      return response.success;
     } catch (error) {
       return false;
     }
@@ -139,10 +133,7 @@ const tokenUtils = {
   // 로그아웃 처리 (공통)
   handleLogout: async (): Promise<void> => {
     try {
-      await fetch(`${API_BASE_URL}/member/logout`, {
-        method: 'POST',
-        credentials: 'include',
-      });
+      await api.member.logout();
     } catch (error) {
       // 서버 로그아웃 요청 실패 처리
     } finally {
@@ -171,7 +162,15 @@ class ApiClient {
 
   // 헤더 생성
   private buildHeaders(customHeaders?: Record<string, string>): Record<string, string> {
-    return { ...this.defaultHeaders, ...customHeaders };
+    const headers = { ...this.defaultHeaders, ...customHeaders };
+    
+    // Zustand store에서 access token 가져와서 Authorization 헤더에 추가
+    const accessToken = useAuthStore.getState().accessToken;
+    if (accessToken) {
+      headers['Authorization'] = `Bearer ${accessToken}`;
+    }
+    
+    return headers;
   }
 
   // 토큰 갱신 함수
@@ -194,8 +193,13 @@ class ApiClient {
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-          processQueue(null, data.data?.accessToken);
-          return data.data?.accessToken;
+          const newToken = data.data?.accessToken;
+          if (newToken) {
+            // Zustand store에 새로운 access token 저장
+            useAuthStore.getState().setAccessToken(newToken);
+            processQueue(null, newToken);
+            return newToken;
+          }
         }
       }
       
@@ -330,41 +334,64 @@ export const apiClient = new ApiClient(API_BASE_URL);
 export const api = {
   // Member API
   member: {
-    signup: (data: any) => apiClient.post(API_ENDPOINTS.MEMBER.SIGNUP, data),
-    login: (data: any) => apiClient.post(API_ENDPOINTS.MEMBER.LOGIN, data),
-    logout: () => apiClient.post(API_ENDPOINTS.MEMBER.LOGOUT, null, { skipAuthRefresh: true }),
-    getProfile: () => apiClient.get(API_ENDPOINTS.MEMBER.PROFILE),
-    validateToken: () => apiClient.get(API_ENDPOINTS.MEMBER.VALIDATE_TOKEN),
-    updateProfile: (data: any) => apiClient.put(API_ENDPOINTS.MEMBER.UPDATE_PROFILE, data),
-    forgotPassword: (data: any) => apiClient.post(API_ENDPOINTS.MEMBER.FORGOT_PASSWORD, data),
-    resetPassword: (data: any) => apiClient.post(API_ENDPOINTS.MEMBER.RESET_PASSWORD, data),
-    checkLoginId: (loginId: string) => apiClient.get(`${API_ENDPOINTS.MEMBER.CHECK_LOGIN_ID}?loginId=${encodeURIComponent(loginId)}`),
-    checkEmail: (email: string) => apiClient.get(`${API_ENDPOINTS.MEMBER.CHECK_EMAIL}?email=${encodeURIComponent(email)}`),
-    refreshToken: () => apiClient.post('/member/reissue-access-token', null, { skipAuthRefresh: true }),
+    signup: (data: any, options?: Omit<ApiRequestOptions, 'method' | 'body'>) => 
+      apiClient.post(API_ENDPOINTS.MEMBER.SIGNUP, data, options),
+    login: (data: any, options?: Omit<ApiRequestOptions, 'method' | 'body'>) => 
+      apiClient.post(API_ENDPOINTS.MEMBER.LOGIN, data, options),
+    logout: (options?: Omit<ApiRequestOptions, 'method'>) => 
+      apiClient.post(API_ENDPOINTS.MEMBER.LOGOUT, null, { skipAuthRefresh: true, ...options }),
+    getProfile: (options?: Omit<ApiRequestOptions, 'method'>) => 
+      apiClient.get(API_ENDPOINTS.MEMBER.PROFILE, options),
+    validateToken: (options?: Omit<ApiRequestOptions, 'method'>) => 
+      apiClient.get(API_ENDPOINTS.MEMBER.VALIDATE_TOKEN, options),
+    updateProfile: (data: any, options?: Omit<ApiRequestOptions, 'method' | 'body'>) => 
+      apiClient.put(API_ENDPOINTS.MEMBER.UPDATE_PROFILE, data, options),
+    forgotPassword: (data: any, options?: Omit<ApiRequestOptions, 'method' | 'body'>) => 
+      apiClient.post(API_ENDPOINTS.MEMBER.FORGOT_PASSWORD, data, options),
+    resetPassword: (data: any, options?: Omit<ApiRequestOptions, 'method' | 'body'>) => 
+      apiClient.post(API_ENDPOINTS.MEMBER.RESET_PASSWORD, data, options),
+    checkLoginId: (loginId: string, options?: Omit<ApiRequestOptions, 'method'>) => 
+      apiClient.get(`${API_ENDPOINTS.MEMBER.CHECK_LOGIN_ID}?loginId=${encodeURIComponent(loginId)}`, options),
+    checkEmail: (email: string, options?: Omit<ApiRequestOptions, 'method'>) => 
+      apiClient.get(`${API_ENDPOINTS.MEMBER.CHECK_EMAIL}?email=${encodeURIComponent(email)}`, options),
+    refreshToken: (options?: Omit<ApiRequestOptions, 'method' | 'body'>) => 
+      apiClient.post('/member/reissue-access-token', null, { skipAuthRefresh: true, ...options }),
   },
 
   // Product API
   product: {
-    getList: (params?: any) => apiClient.get(API_ENDPOINTS.PRODUCT.LIST, { body: params }),
-    getDetail: (id: string | number) => apiClient.get(API_ENDPOINTS.PRODUCT.DETAIL.replace(':id', String(id))),
-    search: (params: any) => apiClient.get(API_ENDPOINTS.PRODUCT.SEARCH, { body: params }),
+    getList: (params?: any, options?: Omit<ApiRequestOptions, 'method'>) => 
+      apiClient.get(API_ENDPOINTS.PRODUCT.LIST, { body: params, ...options }),
+    getDetail: (id: string | number, options?: Omit<ApiRequestOptions, 'method'>) => 
+      apiClient.get(API_ENDPOINTS.PRODUCT.DETAIL.replace(':id', String(id)), options),
+    search: (params: any, options?: Omit<ApiRequestOptions, 'method'>) => 
+      apiClient.get(API_ENDPOINTS.PRODUCT.SEARCH, { body: params, ...options }),
   },
 
   // Cart API
   cart: {
-    getList: () => apiClient.get(API_ENDPOINTS.CART.LIST),
-    add: (data: any) => apiClient.post(API_ENDPOINTS.CART.ADD, data),
-    update: (data: any) => apiClient.put(API_ENDPOINTS.CART.UPDATE, data),
-    remove: (id: string | number) => apiClient.delete(API_ENDPOINTS.CART.REMOVE, { body: { id } }),
-    clear: () => apiClient.delete(API_ENDPOINTS.CART.CLEAR),
+    getList: (options?: Omit<ApiRequestOptions, 'method'>) => 
+      apiClient.get(API_ENDPOINTS.CART.LIST, options),
+    add: (data: any, options?: Omit<ApiRequestOptions, 'method' | 'body'>) => 
+      apiClient.post(API_ENDPOINTS.CART.ADD, data, options),
+    update: (data: any, options?: Omit<ApiRequestOptions, 'method' | 'body'>) => 
+      apiClient.put(API_ENDPOINTS.CART.UPDATE, data, options),
+    remove: (id: string | number, options?: Omit<ApiRequestOptions, 'method'>) => 
+      apiClient.delete(API_ENDPOINTS.CART.REMOVE, { body: { id }, ...options }),
+    clear: (options?: Omit<ApiRequestOptions, 'method'>) => 
+      apiClient.delete(API_ENDPOINTS.CART.CLEAR, options),
   },
 
   // Order API
   order: {
-    create: (data: any) => apiClient.post(API_ENDPOINTS.ORDER.CREATE, data),
-    getList: () => apiClient.get(API_ENDPOINTS.ORDER.LIST),
-    getDetail: (id: string | number) => apiClient.get(API_ENDPOINTS.ORDER.DETAIL.replace(':id', String(id))),
-    cancel: (id: string | number) => apiClient.post(API_ENDPOINTS.ORDER.CANCEL.replace(':id', String(id))),
+    create: (data: any, options?: Omit<ApiRequestOptions, 'method' | 'body'>) => 
+      apiClient.post(API_ENDPOINTS.ORDER.CREATE, data, options),
+    getList: (options?: Omit<ApiRequestOptions, 'method'>) => 
+      apiClient.get(API_ENDPOINTS.ORDER.LIST, options),
+    getDetail: (id: string | number, options?: Omit<ApiRequestOptions, 'method'>) => 
+      apiClient.get(API_ENDPOINTS.ORDER.DETAIL.replace(':id', String(id)), options),
+    cancel: (id: string | number, options?: Omit<ApiRequestOptions, 'method'>) => 
+      apiClient.post(API_ENDPOINTS.ORDER.CANCEL.replace(':id', String(id)), options),
   },
 };
 
@@ -389,34 +416,17 @@ export interface LoginResponse {
 
 // 인증 관련 유틸리티 함수들
 export const authUtils = {
-  // 로그인 상태 확인 (간단한 방법)
-  isAuthenticated: async (): Promise<boolean> => {
-    try {
-      // 프로필 정보를 가져와서 인증 상태 확인
-      const response = await fetch(`${API_BASE_URL}/member/profile`, {
-        method: 'GET',
-        credentials: 'include',
-        headers: DEFAULT_HEADERS,
-      });
-      
-      return response.ok;
-    } catch (error) {
-      // Profile check error: error
-      return false;
-    }
+  // 로그인 상태 확인 (Zustand store 사용)
+  isAuthenticated: (): boolean => {
+    return useAuthStore.getState().isAuthenticated;
   },
 
   // refreshToken 존재 확인
   hasRefreshToken: async (): Promise<boolean> => {
     try {
       // 토큰 갱신 요청을 보내서 refreshToken 존재 여부 확인
-      const response = await fetch(`${API_BASE_URL}/member/reissue-access-token`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: DEFAULT_HEADERS,
-      });
-      
-      return response.ok;
+      const response = await api.member.refreshToken();
+      return response.success;
     } catch (error) {
       return false;
     }
@@ -432,117 +442,4 @@ export const authUtils = {
   refreshToken: tokenUtils.tryRefreshToken
 };
 
-// 인증 상태를 관리하는 React 훅
-export const useAuth = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [user, setUser] = useState<any>(null);
-
-  // 서버에서 인증 상태 확인
-  const checkAuthStatus = async () => {
-    try {
-      
-      // 1. 프로필 API로 accessToken 유효성 확인 (토큰 갱신 건너뛰기)
-      const profileResponse = await apiClient.get(API_ENDPOINTS.MEMBER.PROFILE, { 
-        skipAuthRefresh: true 
-      });
-      
-      
-      if (profileResponse.success && profileResponse.data) {
-        // accessToken이 유효함
-        setIsAuthenticated(true);
-        setUser(profileResponse.data);
-        return;
-      }
-      
-      // 2. accessToken이 유효하지 않으면 토큰 갱신 시도
-      const refreshResponse = await api.member.refreshToken();
-      
-      
-      if (refreshResponse.success) {
-        // 토큰 갱신 성공, 다시 프로필 조회
-        const retryProfileResponse = await apiClient.get(API_ENDPOINTS.MEMBER.PROFILE, { 
-          skipAuthRefresh: true 
-        });
-        
-        
-        if (retryProfileResponse.success && retryProfileResponse.data) {
-          setIsAuthenticated(true);
-          setUser(retryProfileResponse.data);
-          return;
-        } else {
-          // 토큰 갱신은 성공했지만 프로필 조회 실패
-          // 서버 오류인 경우에도 토큰이 갱신되었으므로 인증된 상태로 설정
-          if (retryProfileResponse.status === 500) {
-            setIsAuthenticated(true);
-            setUser(null); // 사용자 정보는 없지만 인증 상태는 유지
-            return;
-          }
-        }
-      }
-      
-      // 3. 모든 시도 실패
-      setIsAuthenticated(false);
-      setUser(null);
-      
-    } catch (error) {
-      // Auth check error: error
-      // Error details: { name: error instanceof Error ? error.name : 'Unknown', message: error instanceof Error ? error.message : String(error), stack: error instanceof Error ? error.stack : 'No stack trace' }
-      setIsAuthenticated(false);
-      setUser(null);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // 컴포넌트 마운트 시 인증 상태 확인
-  useEffect(() => {
-    checkAuthStatus();
-  }, []);
-
-  // 로그인 함수
-  const login = async (loginData: LoginRequest) => {
-    try {
-      const response = await api.member.login(loginData);
-      
-      if (response.success) {
-        // 로그인 성공 시 인증 상태 업데이트
-        setIsAuthenticated(true);
-        setUser((response.data as any)?.user || null);
-        
-        // 페이지 새로고침으로 상태 동기화
-        window.location.href = '/home';
-      }
-      
-      return response;
-    } catch (error) {
-      // Login error: error
-      return { success: false, error: '로그인 중 오류가 발생했습니다.' };
-    }
-  };
-
-  // 로그아웃 함수
-  const logout = async () => {
-    try {
-      // 서버에 로그아웃 요청
-      await api.member.logout();
-    } catch (error) {
-      // Logout error: error
-    } finally {
-      // 클라이언트 상태 초기화
-      setIsAuthenticated(false);
-      setUser(null);
-      
-      // 로그인 페이지로 이동
-      window.location.href = '/login';
-    }
-  };
-
-  return {
-    isAuthenticated,
-    isLoading,
-    user,
-    login,
-    logout,
-  };
-}; 
+ 

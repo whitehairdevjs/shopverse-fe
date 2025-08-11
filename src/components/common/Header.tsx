@@ -1,10 +1,10 @@
 'use client';
 
-import { useAuth } from '../../utils/authContext';
+import { useAuthStore } from '../../stores/authStore';
 import Link from 'next/link';
 
 export default function Header() {
-  const { isAuthenticated, isLoading, user, logout } = useAuth();
+  const { isAuthenticated, isLoading, user, logout } = useAuthStore();
 
   const handleLogout = async () => {
     await logout();

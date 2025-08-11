@@ -1,7 +1,8 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useAuth as useAuthHook, LoginRequest } from './api';
+import React, { createContext, useContext, useEffect } from 'react';
+import { useAuthStore } from '../stores/authStore';
+import { LoginRequest, api } from './api';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -16,30 +17,127 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const auth = useAuthHook();
-  const [isInitialized, setIsInitialized] = useState(false);
+  const {
+    isAuthenticated,
+    isLoading,
+    user,
+    login,
+    logout,
+    setLoading,
+  } = useAuthStore();
 
-  // 초기 인증 상태 확인
   useEffect(() => {
-    if (!auth.isLoading && !isInitialized) {
-      setIsInitialized(true);
-    }
-  }, [auth.isLoading, isInitialized]);
+    checkAuthStatus();
+  }, []);
 
-  // 토큰 갱신 함수
-  const refreshAuth = async () => {
-    // 여기서 토큰 갱신 로직을 실행할 수 있습니다
-    // 현재는 useAuth 훅에서 자동으로 처리되므로 빈 함수로 둡니다
+  const checkAuthStatus = async () => {
+    try {
+      const profileResponse = await api.member.getProfile({ 
+        skipAuthRefresh: true 
+      });
+      
+      if (profileResponse.success && profileResponse.data) {
+        useAuthStore.getState().setAuthenticated(true);
+        useAuthStore.getState().setUser(profileResponse.data as any);
+        return;
+      }
+      
+      const refreshResponse = await api.member.refreshToken();
+      
+      if (refreshResponse.success) {
+        const retryProfileResponse = await api.member.getProfile({ 
+          skipAuthRefresh: true 
+        });
+        
+        if (retryProfileResponse.success && retryProfileResponse.data) {
+          useAuthStore.getState().setAuthenticated(true);
+          useAuthStore.getState().setUser(retryProfileResponse.data as any);
+          return;
+        } else {
+          if (retryProfileResponse.status === 500) {
+            useAuthStore.getState().setAuthenticated(true);
+            useAuthStore.getState().setUser(null);
+            return;
+          }
+        }
+      }
+      
+      useAuthStore.getState().setAuthenticated(false);
+      useAuthStore.getState().setUser(null);
+      
+    } catch (error) {
+      useAuthStore.getState().setAuthenticated(false);
+      useAuthStore.getState().setUser(null);
+    } finally {
+      useAuthStore.getState().setLoading(false);
+    }
   };
 
   const value: AuthContextType = {
-    isAuthenticated: auth.isAuthenticated,
-    isLoading: auth.isLoading || !isInitialized,
-    user: auth.user,
-    login: auth.login,
-    logout: auth.logout,
-    refreshAuth,
-    loadUserInfo: auth.loadUserInfo,
+    isAuthenticated,
+    isLoading,
+    user,
+    login: async (loginData: LoginRequest) => {
+      try {
+        const response = await api.member.login(loginData);
+        
+        if (response.success) {
+          const userData = (response.data as any)?.user;
+          const accessToken = (response.data as any)?.accessToken;
+          
+          if (userData && accessToken) {
+            useAuthStore.getState().login(accessToken, userData);
+          } else {
+            console.log('userData 또는 accessToken이 없음');
+          }
+        }
+        
+        return response;
+      } catch (error) {
+        console.error('로그인 에러:', error);
+        return { success: false, error: '로그인 중 오류가 발생했습니다.' };
+      }
+    },
+    logout: async () => {
+      try {
+        await api.member.logout();
+      } catch (error) {
+        console.error('Logout error:', error);
+      } finally {
+        useAuthStore.getState().logout();
+      }
+    },
+    refreshAuth: async () => {
+      try {
+        const response = await api.member.refreshToken();
+        
+        if (response.success) {
+          try {
+            const profileResponse = await api.member.getProfile();
+            if (profileResponse.success && profileResponse.data) {
+              useAuthStore.getState().setUser(profileResponse.data as any);
+              useAuthStore.getState().setAuthenticated(true);
+            }
+          } catch (profileError) {
+            console.error('Profile load error:', profileError);
+          }
+        }
+      } catch (error) {
+        console.error('Refresh auth error:', error);
+      }
+    },
+    loadUserInfo: async () => {
+      try {
+        const response = await api.member.getProfile();
+        
+        if (response.success && response.data) {
+          useAuthStore.getState().setUser(response.data as any);
+          useAuthStore.getState().setAuthenticated(true);
+        }
+      } catch (error) {
+        console.error('Load user info error:', error);
+      }
+    },
   };
 
   return (

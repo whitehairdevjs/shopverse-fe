@@ -8,7 +8,7 @@ import Toast from '../../../components/common/Toast';
 
 export default function MyPage() {
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { member, logout } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [toast, setToast] = useState<{
     message: string;
@@ -66,8 +66,8 @@ export default function MyPage() {
                     👤
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">{user?.name || '사용자'}</h3>
-                    <p className="text-sm text-gray-600">{user?.email || '이메일 없음'}</p>
+                    <h3 className="font-semibold text-gray-900">{member?.name || 'unknown'}</h3>
+                    <p className="text-sm text-gray-600">{member?.email || 'not email'}</p>
                   </div>
                 </div>
                 

@@ -2,12 +2,12 @@
 
 import React, { createContext, useContext, useEffect } from 'react';
 import { useAuthStore } from '../stores/authStore';
-import { LoginRequest, api } from './api';
+import { LoginRequest, api, authUtils } from './api';
 
 interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
-  user: any;
+  member: any;
   login: (loginData: LoginRequest) => Promise<any>;
   logout: () => Promise<void>;
   refreshAuth: () => Promise<void>;
@@ -20,9 +20,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const {
     isAuthenticated,
     isLoading,
-    user,
+    member,
     login,
-    logout,
     setLoading,
   } = useAuthStore();
 
@@ -32,42 +31,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const checkAuthStatus = async () => {
     try {
-      const profileResponse = await api.member.getProfile({ 
-        skipAuthRefresh: true 
-      });
+      const currentState = useAuthStore.getState();
       
-      if (profileResponse.success && profileResponse.data) {
-        useAuthStore.getState().setAuthenticated(true);
-        useAuthStore.getState().setUser(profileResponse.data as any);
+      // 1. 로그아웃된 사용자 (isAuthenticated: false, accessToken: null)
+      if (!currentState.isAuthenticated && !currentState.accessToken) {
         return;
-      }
-      
-      const refreshResponse = await api.member.refreshToken();
-      
-      if (refreshResponse.success) {
-        const retryProfileResponse = await api.member.getProfile({ 
+      } else {        
+        const profileResponse = await api.member.getProfile({ 
           skipAuthRefresh: true 
         });
         
-        if (retryProfileResponse.success && retryProfileResponse.data) {
-          useAuthStore.getState().setAuthenticated(true);
-          useAuthStore.getState().setUser(retryProfileResponse.data as any);
-          return;
-        } else {
-          if (retryProfileResponse.status === 500) {
-            useAuthStore.getState().setAuthenticated(true);
-            useAuthStore.getState().setUser(null);
-            return;
+        if (!profileResponse.success) {
+          // 프로필 조회 실패 → 토큰 재발급 시도
+        const refreshResponse = await authUtils.tryReissueAccessToken();
+          
+          if (refreshResponse) {
+            // 토큰 재발급 성공 → 다시 프로필 조회
+            const retryProfileResponse = await api.member.getProfile({ 
+              skipAuthRefresh: true 
+            });
+            
+            if (retryProfileResponse.success && retryProfileResponse.data) {
+              useAuthStore.getState().setAuthenticated(true);
+              useAuthStore.getState().setMember(retryProfileResponse.data as any);
+              return;
+            } else if (retryProfileResponse.status === 500) {
+              // 서버 에러 시에도 인증된 상태로 간주 (토큰은 유효하지만 프로필 조회 실패)
+              useAuthStore.getState().setAuthenticated(true);
+              useAuthStore.getState().setMember(null);
+              return;
+            }
           }
-        }
+          
+          // 토큰 재발급 실패 → 로그아웃 처리
+          useAuthStore.getState().setAuthenticated(false);
+          useAuthStore.getState().setMember(null);
+          return;  
+        }    
       }
       
-      useAuthStore.getState().setAuthenticated(false);
-      useAuthStore.getState().setUser(null);
-      
     } catch (error) {
+      // 에러 발생 시 → 로그아웃 처리
       useAuthStore.getState().setAuthenticated(false);
-      useAuthStore.getState().setUser(null);
+      useAuthStore.getState().setMember(null);
     } finally {
       useAuthStore.getState().setLoading(false);
     }
@@ -76,19 +82,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value: AuthContextType = {
     isAuthenticated,
     isLoading,
-    user,
+    member,
     login: async (loginData: LoginRequest) => {
       try {
         const response = await api.member.login(loginData);
         
         if (response.success) {
-          const userData = (response.data as any)?.user;
+          const memberData = (response.data as any)?.member;
           const accessToken = (response.data as any)?.accessToken;
-          
-          if (userData && accessToken) {
-            useAuthStore.getState().login(accessToken, userData);
-          } else {
-            console.log('userData 또는 accessToken이 없음');
+
+          if (memberData && accessToken) {
+            useAuthStore.getState().login(accessToken, memberData);
+            
+            if (typeof window !== 'undefined') {
+              window.location.href = '/home';
+            }
           }
         }
         
@@ -100,22 +108,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     },
     logout: async () => {
       try {
-        await api.member.logout();
+        await authUtils.logout();
       } catch (error) {
         console.error('Logout error:', error);
-      } finally {
-        useAuthStore.getState().logout();
       }
     },
     refreshAuth: async () => {
       try {
-        const response = await api.member.refreshToken();
-        
+        const response = await api.member.reissueAccessToken();
+
         if (response.success) {
           try {
             const profileResponse = await api.member.getProfile();
             if (profileResponse.success && profileResponse.data) {
-              useAuthStore.getState().setUser(profileResponse.data as any);
+              useAuthStore.getState().setMember(profileResponse.data as any);
               useAuthStore.getState().setAuthenticated(true);
             }
           } catch (profileError) {
@@ -131,7 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const response = await api.member.getProfile();
         
         if (response.success && response.data) {
-          useAuthStore.getState().setUser(response.data as any);
+          useAuthStore.getState().setMember(response.data as any);
           useAuthStore.getState().setAuthenticated(true);
         }
       } catch (error) {

@@ -30,52 +30,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const checkAuthStatus = async () => {
-    try {
-      const currentState = useAuthStore.getState();
+    const currentState = useAuthStore.getState();
+    
+    if (currentState.isAuthenticated && currentState.accessToken) {
+      const profileResponse = await api.member.getProfile();
       
-      // 1. 로그아웃된 사용자 (isAuthenticated: false, accessToken: null)
-      if (!currentState.isAuthenticated && !currentState.accessToken) {
-        return;
+      if (profileResponse.success && profileResponse.data) {
+        useAuthStore.getState().setMember(profileResponse.data as any);
       } else {        
-        const profileResponse = await api.member.getProfile({ 
-          skipAuthRefresh: true 
-        });
-        
-        if (!profileResponse.success) {
-          // 프로필 조회 실패 → 토큰 재발급 시도
-        const refreshResponse = await authUtils.tryReissueAccessToken();
-          
-          if (refreshResponse) {
-            // 토큰 재발급 성공 → 다시 프로필 조회
-            const retryProfileResponse = await api.member.getProfile({ 
-              skipAuthRefresh: true 
-            });
-            
-            if (retryProfileResponse.success && retryProfileResponse.data) {
-              useAuthStore.getState().setAuthenticated(true);
-              useAuthStore.getState().setMember(retryProfileResponse.data as any);
-              return;
-            } else if (retryProfileResponse.status === 500) {
-              // 서버 에러 시에도 인증된 상태로 간주 (토큰은 유효하지만 프로필 조회 실패)
-              useAuthStore.getState().setAuthenticated(true);
-              useAuthStore.getState().setMember(null);
-              return;
-            }
-          }
-          
-          // 토큰 재발급 실패 → 로그아웃 처리
-          useAuthStore.getState().setAuthenticated(false);
-          useAuthStore.getState().setMember(null);
-          return;  
-        }    
-      }
-      
-    } catch (error) {
-      // 에러 발생 시 → 로그아웃 처리
-      useAuthStore.getState().setAuthenticated(false);
-      useAuthStore.getState().setMember(null);
-    } finally {
-      useAuthStore.getState().setLoading(false);
+        useAuthStore.getState().setMember(null);
+      } 
+
+      return;
     }
   };
 

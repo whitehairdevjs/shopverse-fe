@@ -165,7 +165,6 @@ const tokenUtils = {
   }
 };
 
-// 기본 API 클라이언트
 class ApiClient {
   private baseURL: string;
   private defaultHeaders: Record<string, string>;
@@ -175,28 +174,22 @@ class ApiClient {
     this.defaultHeaders = { ...DEFAULT_HEADERS, ...defaultHeaders };
   }
 
-  // URL 생성
   private buildUrl(endpoint: string): string {
     return `${this.baseURL}${endpoint}`;
   }
 
-  // 헤더 생성
-  private buildHeaders(customHeaders?: Record<string, string>): Record<string, string> {
+  private buildHeaders(customHeaders?: Record<string, string>, skipAuth = false): Record<string, string> {
     const headers = { ...this.defaultHeaders, ...customHeaders };
-    
-    // Zustand store에서 access token 가져와서 Authorization 헤더에 추가
-    const accessToken = useAuthStore.getState().accessToken;
-    if (accessToken) {
-      headers['Authorization'] = `Bearer ${accessToken}`;
+
+    if (!skipAuth) {
+      const accessToken = useAuthStore.getState().accessToken;
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
     }
     
     return headers;
   }
-
-  // 토큰 갱신 함수
-  // private async refreshAccessToken(): Promise<string | null> {
-    
-  // }
 
   // API 요청 실행 (토큰 갱신 로직 포함)
   private async request<T>(
@@ -213,7 +206,7 @@ class ApiClient {
     } = options;
 
     const url = this.buildUrl(endpoint);
-    const requestHeaders = this.buildHeaders(headers);
+    const requestHeaders = this.buildHeaders(headers, skipAuthRefresh);
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);

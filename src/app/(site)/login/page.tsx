@@ -69,7 +69,7 @@ export default function LoginPage() {
         
         // 로그인 성공 후 홈페이지로 이동 (강제 새로고침으로 Hydration 에러 방지)
         setTimeout(() => {
-          window.location.href = '/home';
+          // window.location.href = '/home';
         }, 1000);
       } else {
         showToast(response.message || '로그인에 실패했습니다.');

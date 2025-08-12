@@ -1,13 +1,14 @@
 'use client';
 
 import { useAuthStore } from '../../stores/authStore';
+import { authUtils } from '../../utils/api';
 import Link from 'next/link';
 
 export default function Header() {
-  const { isAuthenticated, isLoading, user, logout } = useAuthStore();
+  const { isAuthenticated, isLoading, member } = useAuthStore();
 
   const handleLogout = async () => {
-    await logout();
+    await authUtils.logout();
   };
 
   return (
@@ -51,7 +52,7 @@ export default function Header() {
                 {isAuthenticated ? (
                   <div className="flex items-center space-x-4">
                     <span className="text-sm text-gray-700">
-                      안녕하세요, {user?.name || '사용자'}님
+                      안녕하세요, {member?.name || 'unknown'}님
                     </span>
                     <button 
                       onClick={handleLogout}

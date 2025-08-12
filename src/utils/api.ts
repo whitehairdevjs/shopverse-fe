@@ -1,6 +1,6 @@
 import { API_BASE_URL, API_ENDPOINTS, HTTP_METHODS, DEFAULT_HEADERS } from '../constants';
 import { useAuthStore } from '../stores/authStore';
-import type { User } from '../stores/authStore';
+import type { Member } from '../stores/authStore';
 
 // API 응답 타입
 export interface ApiResponse<T = any> {
@@ -110,27 +110,47 @@ export const cookieUtils = {
   },
 };
 
-// 공통 토큰 관리 함수들
 const tokenUtils = {
-  // 모든 토큰 삭제
   clearAllTokens: () => {
-    // Zustand store에서 access token 제거
     useAuthStore.getState().clearAuth();
-    // refresh token은 여전히 httpOnly 쿠키로 관리
-    cookieUtils.deleteCookie('refreshToken');
   },
 
-  // 토큰 갱신 시도
-  tryRefreshToken: async (): Promise<boolean> => {
+  // 액세스 토큰 재발급 시도
+  tryReissueAccessToken: async (): Promise<boolean> => {
     try {
-      const response = await api.member.refreshToken();
-      return response.success;
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        });
+      }
+  
+      isRefreshing = true;
+
+      const response = await api.member.reissueAccessToken();
+
+      if (response.success) {
+        const data = await (response.data as any);        
+        const newToken = data.accessToken;
+        if (newToken) {
+          // Zustand store에 새로운 access token 저장
+          useAuthStore.getState().setAccessToken(newToken);
+          processQueue(null, newToken);
+          return response.success;
+        }        
+      }      
+    
+      await tokenUtils.handleLogout();
+      processQueue(new Error('토큰 갱신 실패'));
+      return false;      
     } catch (error) {
+      await tokenUtils.handleLogout();
+      processQueue(error);
       return false;
+    } finally {
+      isRefreshing = false;
     }
   },
 
-  // 로그아웃 처리 (공통)
   handleLogout: async (): Promise<void> => {
     try {
       await api.member.logout();
@@ -139,7 +159,7 @@ const tokenUtils = {
     } finally {
       tokenUtils.clearAllTokens();
       if (typeof window !== 'undefined') {
-        window.location.href = '/login';
+        window.location.href = '/home';
       }
     }
   }
@@ -174,47 +194,9 @@ class ApiClient {
   }
 
   // 토큰 갱신 함수
-  private async refreshAccessToken(): Promise<string | null> {
-    if (isRefreshing) {
-      return new Promise((resolve, reject) => {
-        failedQueue.push({ resolve, reject });
-      });
-    }
-
-    isRefreshing = true;
-
-    try {
-      const response = await fetch(this.buildUrl('/member/reissue-access-token'), {
-        method: 'POST',
-        credentials: 'include',
-        headers: this.defaultHeaders,
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          const newToken = data.data?.accessToken;
-          if (newToken) {
-            // Zustand store에 새로운 access token 저장
-            useAuthStore.getState().setAccessToken(newToken);
-            processQueue(null, newToken);
-            return newToken;
-          }
-        }
-      }
-      
-      // 갱신 실패 시 로그아웃 처리
-      await tokenUtils.handleLogout();
-      processQueue(new Error('토큰 갱신 실패'));
-      return null;
-    } catch (error) {
-      await tokenUtils.handleLogout();
-      processQueue(error);
-      return null;
-    } finally {
-      isRefreshing = false;
-    }
-  }
+  // private async refreshAccessToken(): Promise<string | null> {
+    
+  // }
 
   // API 요청 실행 (토큰 갱신 로직 포함)
   private async request<T>(
@@ -249,8 +231,8 @@ class ApiClient {
 
       // 401 에러이고 토큰 갱신을 건너뛰지 않는 경우
       if (response.status === 401 && !skipAuthRefresh) {
-        const newToken = await this.refreshAccessToken();
-        if (newToken) {
+        const response = await tokenUtils.tryReissueAccessToken();
+        if (response) {
           // 토큰 갱신 성공 시 원래 요청 재시도
           return this.request<T>(endpoint, options);
         }
@@ -354,7 +336,7 @@ export const api = {
       apiClient.get(`${API_ENDPOINTS.MEMBER.CHECK_LOGIN_ID}?loginId=${encodeURIComponent(loginId)}`, options),
     checkEmail: (email: string, options?: Omit<ApiRequestOptions, 'method'>) => 
       apiClient.get(`${API_ENDPOINTS.MEMBER.CHECK_EMAIL}?email=${encodeURIComponent(email)}`, options),
-    refreshToken: (options?: Omit<ApiRequestOptions, 'method' | 'body'>) => 
+    reissueAccessToken: (options?: Omit<ApiRequestOptions, 'method' | 'body'>) => 
       apiClient.post('/member/reissue-access-token', null, { skipAuthRefresh: true, ...options }),
   },
 
@@ -405,13 +387,7 @@ export interface LoginRequest {
 export interface LoginResponse {
   success: boolean;
   message?: string;
-  user?: {
-    id: number;
-    loginId: string;
-    email: string;
-    name: string;
-    role: string;
-  };
+  member?: Member;
 }
 
 // 인증 관련 유틸리티 함수들
@@ -424,22 +400,19 @@ export const authUtils = {
   // refreshToken 존재 확인
   hasRefreshToken: async (): Promise<boolean> => {
     try {
-      // 토큰 갱신 요청을 보내서 refreshToken 존재 여부 확인
-      const response = await api.member.refreshToken();
+      // 액세스 토큰 재발급 요청을 보내서 refreshToken 존재 여부 확인
+      const response = await api.member.reissueAccessToken();
       return response.success;
     } catch (error) {
       return false;
     }
   },
 
-  // 토큰 갱신 시도
-  tryRefreshToken: tokenUtils.tryRefreshToken,
+  // 액세스 토큰 재발급 시도
+  tryReissueAccessToken: tokenUtils.tryReissueAccessToken,
 
   // 로그아웃 처리
-  logout: tokenUtils.handleLogout,
-
-  // 토큰 갱신 함수 (별칭)
-  refreshToken: tokenUtils.tryRefreshToken
+  logout: tokenUtils.handleLogout
 };
 
  

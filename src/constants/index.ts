@@ -10,7 +10,7 @@ export const API_ENDPOINTS = {
     LOGOUT: '/member/logout',
     PROFILE: '/member/profile',
     VALIDATE_TOKEN: '/member/validate-token', // 토큰 검증 전용
-    UPDATE_PROFILE: '/member/profile/update',
+    UPDATE_PROFILE: '/member/profile',
     FORGOT_PASSWORD: '/member/forgot-password',
     RESET_PASSWORD: '/member/reset-password',
     CHECK_LOGIN_ID: '/member/check-login-id',

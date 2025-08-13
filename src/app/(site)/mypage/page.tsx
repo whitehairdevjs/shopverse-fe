@@ -3,13 +3,16 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import ProtectedRoute from '../../../components/common/ProtectedRoute';
+import ProfileEditModal from '../../../components/mypage/ProfileEditModal';
 import { useAuth } from '../../../utils/authContext';
+import { api } from '../../../utils/api';
 import Toast from '../../../components/common/Toast';
 
 export default function MyPage() {
   const router = useRouter();
   const { member, logout } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [toast, setToast] = useState<{
     message: string;
     type: 'success' | 'error' | 'warning' | 'info';
@@ -51,6 +54,31 @@ export default function MyPage() {
     }
   };
 
+  const openEditModal = () => {
+    setIsEditModalOpen(true);
+  };
+
+  const closeEditModal = () => {
+    setIsEditModalOpen(false);
+  };
+
+  const handleUpdateProfile = async (updatedData: any) => {
+    try {
+      const response = await api.member.updateProfile(updatedData);
+      
+      if (response.success) {
+        showToast('개인정보가 성공적으로 수정되었습니다.', 'success');
+      } else {
+        throw new Error(response.error || '개인정보 수정에 실패했습니다.');
+      }
+      
+    } catch (error) {
+      console.error('Profile update error:', error);
+      showToast('개인정보 수정 중 오류가 발생했습니다.', 'error');
+      throw error; // 에러를 다시 던져서 모달이 닫히지 않도록
+    }
+  };
+
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50">
@@ -76,7 +104,12 @@ export default function MyPage() {
                   <a href="#" className="block px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg">배송 조회</a>
                   <a href="#" className="block px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg">찜 목록</a>
                   <a href="#" className="block px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg">리뷰 관리</a>
-                  <a href="#" className="block px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg">개인정보 수정</a>
+                  <button 
+                    onClick={openEditModal}
+                    className="w-full text-left block px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg"
+                  >
+                    개인정보 수정
+                  </button>
                   <button 
                     onClick={handleLogout}
                     disabled={isLoggingOut}
@@ -161,6 +194,14 @@ export default function MyPage() {
             </div>
           </div>
         </div>
+        
+        {/* 개인정보 수정 모달 */}
+        <ProfileEditModal
+          isOpen={isEditModalOpen}
+          onClose={closeEditModal}
+          member={member}
+          onUpdate={handleUpdateProfile}
+        />
         
         {/* 토스트 알림 */}
         <Toast

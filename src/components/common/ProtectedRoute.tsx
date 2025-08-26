@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../utils/authContext';
+import { useAuthStore } from '../../stores/authStore';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -13,14 +14,32 @@ export default function ProtectedRoute({
   children, 
   redirectTo = '/login' 
 }: ProtectedRouteProps) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, checkAuthStatus } = useAuth();
   const router = useRouter();
+  const hasCheckedAuth = useRef(false);
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.push(redirectTo);
-    }
-  }, [isAuthenticated, isLoading, router, redirectTo]);
+    const verifyAuth = async () => {
+      if (hasCheckedAuth.current) return;
+      
+      if (!isLoading) {
+        try {
+          hasCheckedAuth.current = true;
+          await checkAuthStatus();
+          const currentState = useAuthStore.getState();
+          
+          if (!currentState.isAuthenticated) {
+            router.push(redirectTo);
+          }
+        } catch (error) {
+          console.error('Auth verification failed:', error);
+          router.push(redirectTo);
+        }
+      }
+    };
+
+    verifyAuth();
+  }, [isLoading, router, redirectTo]); // checkAuthStatus 제거
 
   if (isLoading) {
     return (

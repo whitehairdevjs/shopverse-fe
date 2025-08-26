@@ -41,12 +41,12 @@ export default function Header() {
             
             {/* 우측 메뉴 - 기본 상태 */}
             <div className="flex items-center space-x-6">
-              <div className="flex items-center space-x-1 text-gray-700">
+              <Link href="/login" className="flex items-center space-x-1 text-gray-700 hover:text-orange-500 transition-colors">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
                 </svg>
                 <span>로그인</span>
-              </div>
+              </Link>
               
               {/* 장바구니 */}
               <Link href="/cart" className="text-gray-700 hover:text-orange-500 transition-colors">
@@ -116,7 +116,8 @@ export default function Header() {
               <div className="flex items-center space-x-4">
                 <span className="text-sm text-gray-700">
                   안녕하세요, {member?.name || 'unknown'}님
-                </span>
+                </span>                
+                
                 <button 
                   onClick={handleLogout}
                   className="flex items-center space-x-1 text-sm text-gray-700 hover:text-orange-500 transition-colors"
@@ -137,6 +138,17 @@ export default function Header() {
               </Link>
             )}
             
+            {/* 마이페이지 */}
+            <Link 
+              href="/mypage" 
+              className="text-gray-700 hover:text-orange-500 transition-colors"
+              title="마이페이지"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </Link>
+
             {/* 장바구니 */}
             <Link href="/cart" className="text-gray-700 hover:text-orange-500 transition-colors">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -154,17 +166,6 @@ export default function Header() {
           <Link href="/product" className="text-sm text-gray-700 hover:text-orange-500 transition-colors">
             상품
           </Link>
-          <Link href="/cart" className="text-sm text-gray-700 hover:text-orange-500 transition-colors">
-            장바구니
-          </Link>
-          <Link href="/order" className="text-sm text-gray-700 hover:text-orange-500 transition-colors">
-            주문
-          </Link>
-          {isAuthenticated && (
-            <Link href="/mypage" className="text-sm text-gray-700 hover:text-orange-500 transition-colors">
-              마이페이지
-            </Link>
-          )}
           <Link href="/live" className="text-sm text-gray-700 hover:text-orange-500 transition-colors">
             라이브
           </Link>

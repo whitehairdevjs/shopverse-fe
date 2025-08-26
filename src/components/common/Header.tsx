@@ -64,13 +64,7 @@ export default function Header() {
             </Link>
             <Link href="/product" className="text-sm text-gray-700 hover:text-orange-500 transition-colors">
               상품
-            </Link>
-            <Link href="/cart" className="text-sm text-gray-700 hover:text-orange-500 transition-colors">
-              장바구니
-            </Link>
-            <Link href="/order" className="text-sm text-gray-700 hover:text-orange-500 transition-colors">
-              주문
-            </Link>
+            </Link>            
             <Link href="/live" className="text-sm text-gray-700 hover:text-orange-500 transition-colors">
               라이브
             </Link>
@@ -139,22 +133,26 @@ export default function Header() {
             )}
             
             {/* 마이페이지 */}
-            <Link 
-              href="/mypage" 
-              className="text-gray-700 hover:text-orange-500 transition-colors"
-              title="마이페이지"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-            </Link>
+            {isAuthenticated && (
+              <Link 
+                href="/mypage" 
+                className="text-gray-700 hover:text-orange-500 transition-colors"
+                title="마이페이지"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </Link>
+            )}
 
             {/* 장바구니 */}
-            <Link href="/cart" className="text-gray-700 hover:text-orange-500 transition-colors">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-              </svg>
-            </Link>
+            {isAuthenticated && (
+              <Link href="/cart" className="text-gray-700 hover:text-orange-500 transition-colors">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                </svg>
+              </Link>
+            )}
           </div>
         </div>
         

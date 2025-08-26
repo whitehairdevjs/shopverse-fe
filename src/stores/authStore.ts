@@ -30,9 +30,8 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         accessToken: null,
         member: null,
         isAuthenticated: false,
-        isLoading: false, // 초기값을 false로 설정
+        isLoading: true,
 
-        // Actions
         setAccessToken: (token) => set({ accessToken: token }),
         setMember: (member) => set({ member }),
         setAuthenticated: (authenticated) => set({ isAuthenticated: authenticated }),

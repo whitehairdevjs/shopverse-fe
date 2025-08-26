@@ -26,22 +26,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   } = useAuthStore();
 
   useEffect(() => {
-    checkAuthStatus();
+    const initAuth = async () => {
+      await checkAuthStatus();
+    };
+    
+    initAuth();
   }, []);
 
   const checkAuthStatus = async () => {
-    const currentState = useAuthStore.getState();
-    
-    if (currentState.isAuthenticated && currentState.accessToken) {
-      const profileResponse = await api.member.getProfile();
+    try {
+      const currentState = useAuthStore.getState();
       
-      if (profileResponse.success && profileResponse.data) {
-        useAuthStore.getState().setMember(profileResponse.data as any);
-      } else {        
+      useAuthStore.getState().setLoading(true);
+      
+      if (currentState.accessToken) {
+        try {
+          const profileResponse = await api.member.getProfile();
+          
+          if (profileResponse.success && profileResponse.data) {
+            useAuthStore.getState().setMember(profileResponse.data as any);
+            useAuthStore.getState().setAuthenticated(true);
+          } else {
+            useAuthStore.getState().setMember(null);
+            useAuthStore.getState().setAuthenticated(false);
+          }
+        } catch (error) {
+          console.error('Profile check error:', error);
+          useAuthStore.getState().setMember(null);
+          useAuthStore.getState().setAuthenticated(false);
+        }
+      } else {
+        // 토큰이 없는 경우
+        useAuthStore.getState().setAuthenticated(false);
         useAuthStore.getState().setMember(null);
-      } 
-
-      return;
+      }
+    } catch (error) {
+      console.error('Auth check error:', error);
+      useAuthStore.getState().setAuthenticated(false);
+      useAuthStore.getState().setMember(null);
+    } finally {
+      useAuthStore.getState().setLoading(false);
     }
   };
 

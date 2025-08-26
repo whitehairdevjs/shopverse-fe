@@ -4,13 +4,13 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import ProtectedRoute from '../../../components/common/ProtectedRoute';
 import ProfileEditModal from '../../../components/mypage/ProfileEditModal';
-import { useAuth } from '../../../utils/authContext';
+import { useAuthStore } from '../../../stores/authStore';
 import { api } from '../../../utils/api';
 import Toast from '../../../components/common/Toast';
 
 export default function MyPage() {
   const router = useRouter();
-  const { member, logout } = useAuth();
+  const { member, clearAuth } = useAuthStore();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [toast, setToast] = useState<{
@@ -41,7 +41,7 @@ export default function MyPage() {
     setIsLoggingOut(true);
     
     try {
-      await logout();
+      clearAuth();
       showToast('로그아웃이 완료되었습니다.', 'success');
           
       setTimeout(() => {
@@ -95,7 +95,7 @@ export default function MyPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">{member?.name || 'unknown'}</h3>
-                    <p className="text-sm text-gray-600">{member?.email || 'not email'}</p>
+                    <p className="text-sm text-gray-600">{member?.loginId || 'not loginId'}</p>
                   </div>
                 </div>
                 

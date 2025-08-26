@@ -12,6 +12,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   refreshAuth: () => Promise<void>;
   loadUserInfo: () => Promise<void>;
+  checkAuthStatus: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -134,6 +135,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error('Load user info error:', error);
       }
     },
+    checkAuthStatus,
   };
 
   return (

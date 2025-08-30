@@ -22,6 +22,8 @@ export const API_ENDPOINTS = {
     LIST: '/products',
     DETAIL: '/products/:id',
     SEARCH: '/products/search',
+    CATEGORIES: '/product/categories',
+    CATEGORIES_ACTIVE: '/product/categories/active',
   },
   
   // Cart related endpoints

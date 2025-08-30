@@ -341,6 +341,11 @@ export const api = {
       apiClient.get(API_ENDPOINTS.PRODUCT.DETAIL.replace(':id', String(id)), options),
     search: (params: any, options?: Omit<ApiRequestOptions, 'method'>) => 
       apiClient.get(API_ENDPOINTS.PRODUCT.SEARCH, { body: params, ...options }),
+    // Category API
+    getCategories: (options?: Omit<ApiRequestOptions, 'method'>) => 
+      apiClient.get(API_ENDPOINTS.PRODUCT.CATEGORIES, options),
+    getActiveCategories: (options?: Omit<ApiRequestOptions, 'method'>) => 
+      apiClient.get(API_ENDPOINTS.PRODUCT.CATEGORIES_ACTIVE, options),
   },
 
   // Cart API

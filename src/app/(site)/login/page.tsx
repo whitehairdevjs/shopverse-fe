@@ -1,12 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Toast from '../../../components/common/Toast';
 import { useAuth } from '../../../utils/authContext';
 
 export default function LoginPage() {
-  const router = useRouter();
   const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -74,7 +72,7 @@ export default function LoginPage() {
       } else {
         showToast(response.message || '로그인에 실패했습니다.');
       }
-    } catch (error) {
+    } catch {
       // 로그인 에러 처리
       showToast('로그인 중 오류가 발생했습니다.');
     } finally {

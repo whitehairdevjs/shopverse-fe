@@ -39,7 +39,7 @@ export default function ProtectedRoute({
     };
 
     verifyAuth();
-  }, [isLoading, router, redirectTo]); // checkAuthStatus 제거
+  }, [isLoading, router, redirectTo, checkAuthStatus]);
 
   if (isLoading) {
     return (

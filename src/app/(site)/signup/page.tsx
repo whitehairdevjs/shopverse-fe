@@ -26,7 +26,6 @@ interface SignupFormData {
 export default function SignupPage() {
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [toast, setToast] = useState<{
     message: string;
@@ -249,7 +248,7 @@ export default function SignupPage() {
           message: '서버 에러가 발생 하였습니다. 잠시후 다시 시도해주세요.',
         });
       }
-    } catch (error) {
+    } catch {
       // 아이디 중복확인 에러 처리
       setLoginIdStatus({
         isChecking: false,
@@ -311,7 +310,7 @@ export default function SignupPage() {
           message: '서버 에러가 발생 하였습니다. 잠시후 다시 시도해주세요.',
         });
       }
-    } catch (error) {
+    } catch {
       // 이메일 중복확인 에러 처리
       setEmailStatus({
         isChecking: false,
@@ -400,7 +399,6 @@ export default function SignupPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     
     if (!validateForm()) {
       return;
@@ -437,7 +435,7 @@ export default function SignupPage() {
           showToast('회원가입에 실패했습니다.');
         }
       }
-    } catch (error) {
+    } catch {
       // 회원가입 에러 처리
       showToast('서버 연결에 실패했습니다. 다시 시도해주세요.');
     } finally {

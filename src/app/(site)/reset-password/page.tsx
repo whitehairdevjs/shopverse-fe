@@ -9,7 +9,6 @@ export default function ResetPasswordPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
   const [toast, setToast] = useState<{
     message: string;
     type: 'success' | 'error' | 'warning' | 'info';
@@ -34,7 +33,6 @@ export default function ResetPasswordPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
 
     // 비밀번호 유효성 검사
     if (password.length < 8) {
@@ -60,9 +58,9 @@ export default function ResetPasswordPage() {
       } else {
         showToast(response.error || '비밀번호 재설정에 실패했습니다.');
       }
-    } catch (error) {
+    } catch {
       // 비밀번호 재설정 실패 처리
-      setError('비밀번호 재설정 중 오류가 발생했습니다.');
+      showToast('비밀번호 재설정 중 오류가 발생했습니다.');
     } finally {
       setIsLoading(false);
     }

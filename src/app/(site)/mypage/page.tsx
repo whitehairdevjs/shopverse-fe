@@ -8,6 +8,14 @@ import { useAuthStore } from '../../../stores/authStore';
 import { api } from '../../../utils/api';
 import Toast from '../../../components/common/Toast';
 
+// Profile update data interface
+interface ProfileUpdateData {
+  name?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+}
+
 export default function MyPage() {
   const router = useRouter();
   const { member, clearAuth } = useAuthStore();
@@ -47,7 +55,7 @@ export default function MyPage() {
       setTimeout(() => {
         router.push('/home');
       }, 1000);
-    } catch (error) {
+    } catch {
       showToast('로그아웃 중 오류가 발생했습니다.', 'error');
     } finally {
       setIsLoggingOut(false);
@@ -62,7 +70,7 @@ export default function MyPage() {
     setIsEditModalOpen(false);
   };
 
-  const handleUpdateProfile = async (updatedData: any) => {
+  const handleUpdateProfile = async (updatedData: ProfileUpdateData) => {
     try {
       const response = await api.member.updateProfile(updatedData);
       

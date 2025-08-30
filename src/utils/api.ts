@@ -3,7 +3,7 @@ import { useAuthStore } from '../stores/authStore';
 import type { Member } from '../stores/authStore';
 
 // API 응답 타입
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   message?: string;
@@ -17,7 +17,7 @@ export interface ApiResponse<T = any> {
 export interface ApiRequestOptions {
   method?: keyof typeof HTTP_METHODS;
   headers?: Record<string, string>;
-  body?: any;
+  body?: unknown;
   timeout?: number;
   credentials?: RequestCredentials;
   skipAuthRefresh?: boolean; // 토큰 갱신을 건너뛸지 여부
@@ -26,16 +26,16 @@ export interface ApiRequestOptions {
 // 토큰 갱신 상태 관리
 let isRefreshing = false;
 let failedQueue: Array<{
-  resolve: (value: any) => void;
-  reject: (error: any) => void;
+  resolve: (value: boolean) => void;
+  reject: (error: Error) => void;
 }> = [];
 
-const processQueue = (error: any, token: string | null = null) => {
+const processQueue = (error: Error | null) => {
   failedQueue.forEach(({ resolve, reject }) => {
     if (error) {
       reject(error);
     } else {
-      resolve(token);
+      resolve(true);
     }
   });
   
@@ -129,13 +129,13 @@ const tokenUtils = {
       const response = await api.member.reissueAccessToken();
 
       if (response.success) {
-        const data = await (response.data as any);        
+        const data = await (response.data as { accessToken: string });        
         const newToken = data.accessToken;
         if (newToken) {
-          // Zustand store에 새로운 access token 저장
-          useAuthStore.getState().setAccessToken(newToken);
-          processQueue(null, newToken);
-          return response.success;
+                      // Zustand store에 새로운 access token 저장
+            useAuthStore.getState().setAccessToken(newToken);
+            processQueue(null);
+            return response.success;
         }        
       }      
     
@@ -144,7 +144,7 @@ const tokenUtils = {
       return false;      
     } catch (error) {
       await tokenUtils.handleLogout();
-      processQueue(error);
+      processQueue(error as Error);
       return false;
     } finally {
       isRefreshing = false;
@@ -154,7 +154,7 @@ const tokenUtils = {
   handleLogout: async (): Promise<void> => {
     try {
       await api.member.logout();
-    } catch (error) {
+    } catch {
       // 서버 로그아웃 요청 실패 처리
     } finally {
       tokenUtils.clearAllTokens();
@@ -282,12 +282,12 @@ class ApiClient {
   }
 
   // POST 요청
-  async post<T>(endpoint: string, body?: any, options?: Omit<ApiRequestOptions, 'method' | 'body'>): Promise<ApiResponse<T>> {
+  async post<T>(endpoint: string, body?: unknown, options?: Omit<ApiRequestOptions, 'method' | 'body'>): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { ...options, method: 'POST', body });
   }
 
   // PUT 요청
-  async put<T>(endpoint: string, body?: any, options?: Omit<ApiRequestOptions, 'method' | 'body'>): Promise<ApiResponse<T>> {
+  async put<T>(endpoint: string, body?: unknown, options?: Omit<ApiRequestOptions, 'method' | 'body'>): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { ...options, method: 'PUT', body });
   }
 
@@ -297,7 +297,7 @@ class ApiClient {
   }
 
   // PATCH 요청
-  async patch<T>(endpoint: string, body?: any, options?: Omit<ApiRequestOptions, 'method' | 'body'>): Promise<ApiResponse<T>> {
+  async patch<T>(endpoint: string, body?: unknown, options?: Omit<ApiRequestOptions, 'method' | 'body'>): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { ...options, method: 'PATCH', body });
   }
 }
@@ -309,9 +309,9 @@ export const apiClient = new ApiClient(API_BASE_URL);
 export const api = {
   // Member API
   member: {
-    signup: (data: any, options?: Omit<ApiRequestOptions, 'method' | 'body'>) => 
+    signup: (data: unknown, options?: Omit<ApiRequestOptions, 'method' | 'body'>) => 
       apiClient.post(API_ENDPOINTS.MEMBER.SIGNUP, data, options),
-    login: (data: any, options?: Omit<ApiRequestOptions, 'method' | 'body'>) => 
+    login: (data: unknown, options?: Omit<ApiRequestOptions, 'method' | 'body'>) => 
       apiClient.post(API_ENDPOINTS.MEMBER.LOGIN, data, options),
     logout: (options?: Omit<ApiRequestOptions, 'method'>) => 
       apiClient.post(API_ENDPOINTS.MEMBER.LOGOUT, null, { skipAuthRefresh: true, ...options }),
@@ -319,11 +319,11 @@ export const api = {
       apiClient.get(API_ENDPOINTS.MEMBER.PROFILE, options),
     validateToken: (options?: Omit<ApiRequestOptions, 'method'>) => 
       apiClient.get(API_ENDPOINTS.MEMBER.VALIDATE_TOKEN, options),
-    updateProfile: (data: any, options?: Omit<ApiRequestOptions, 'method' | 'body'>) => 
+    updateProfile: (data: unknown, options?: Omit<ApiRequestOptions, 'method' | 'body'>) => 
       apiClient.put(API_ENDPOINTS.MEMBER.UPDATE_PROFILE, data, options),
-    forgotPassword: (data: any, options?: Omit<ApiRequestOptions, 'method' | 'body'>) => 
+    forgotPassword: (data: unknown, options?: Omit<ApiRequestOptions, 'method' | 'body'>) => 
       apiClient.post(API_ENDPOINTS.MEMBER.FORGOT_PASSWORD, data, options),
-    resetPassword: (data: any, options?: Omit<ApiRequestOptions, 'method' | 'body'>) => 
+    resetPassword: (data: unknown, options?: Omit<ApiRequestOptions, 'method' | 'body'>) => 
       apiClient.post(API_ENDPOINTS.MEMBER.RESET_PASSWORD, data, options),
     checkLoginId: (loginId: string, options?: Omit<ApiRequestOptions, 'method'>) => 
       apiClient.get(`${API_ENDPOINTS.MEMBER.CHECK_LOGIN_ID}?loginId=${encodeURIComponent(loginId)}`, options),
@@ -335,11 +335,11 @@ export const api = {
 
   // Product API
   product: {
-    getList: (params?: any, options?: Omit<ApiRequestOptions, 'method'>) => 
+    getList: (params?: unknown, options?: Omit<ApiRequestOptions, 'method'>) => 
       apiClient.get(API_ENDPOINTS.PRODUCT.LIST, { body: params, ...options }),
     getDetail: (id: string | number, options?: Omit<ApiRequestOptions, 'method'>) => 
       apiClient.get(API_ENDPOINTS.PRODUCT.DETAIL.replace(':id', String(id)), options),
-    search: (params: any, options?: Omit<ApiRequestOptions, 'method'>) => 
+    search: (params: unknown, options?: Omit<ApiRequestOptions, 'method'>) => 
       apiClient.get(API_ENDPOINTS.PRODUCT.SEARCH, { body: params, ...options }),
     // Category API
     getCategories: (options?: Omit<ApiRequestOptions, 'method'>) => 
@@ -352,9 +352,9 @@ export const api = {
   cart: {
     getList: (options?: Omit<ApiRequestOptions, 'method'>) => 
       apiClient.get(API_ENDPOINTS.CART.LIST, options),
-    add: (data: any, options?: Omit<ApiRequestOptions, 'method' | 'body'>) => 
+    add: (data: unknown, options?: Omit<ApiRequestOptions, 'method' | 'body'>) => 
       apiClient.post(API_ENDPOINTS.CART.ADD, data, options),
-    update: (data: any, options?: Omit<ApiRequestOptions, 'method' | 'body'>) => 
+    update: (data: unknown, options?: Omit<ApiRequestOptions, 'method' | 'body'>) => 
       apiClient.put(API_ENDPOINTS.CART.UPDATE, data, options),
     remove: (id: string | number, options?: Omit<ApiRequestOptions, 'method'>) => 
       apiClient.delete(API_ENDPOINTS.CART.REMOVE, { body: { id }, ...options }),
@@ -364,7 +364,7 @@ export const api = {
 
   // Order API
   order: {
-    create: (data: any, options?: Omit<ApiRequestOptions, 'method' | 'body'>) => 
+    create: (data: unknown, options?: Omit<ApiRequestOptions, 'method' | 'body'>) => 
       apiClient.post(API_ENDPOINTS.ORDER.CREATE, data, options),
     getList: (options?: Omit<ApiRequestOptions, 'method'>) => 
       apiClient.get(API_ENDPOINTS.ORDER.LIST, options),
@@ -401,7 +401,7 @@ export const authUtils = {
       // 액세스 토큰 재발급 요청을 보내서 refreshToken 존재 여부 확인
       const response = await api.member.reissueAccessToken();
       return response.success;
-    } catch (error) {
+    } catch {
       return false;
     }
   },

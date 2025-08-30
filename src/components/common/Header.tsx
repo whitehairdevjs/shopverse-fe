@@ -6,7 +6,7 @@ import { authUtils } from '../../utils/api';
 import Link from 'next/link';
 
 export default function Header() {
-  const { isAuthenticated, isLoading, member } = useAuthStore();
+  const { isAuthenticated, member } = useAuthStore();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {

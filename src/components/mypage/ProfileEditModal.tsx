@@ -2,11 +2,37 @@
 
 import { useState, useEffect } from 'react';
 
+// Member interface
+interface Member {
+  name?: string;
+  nickname?: string;
+  phone?: string;
+  email?: string;
+  gender?: string;
+  birthDate?: string;
+  marketingYn?: boolean;
+  smsYn?: boolean;
+  emailYn?: boolean;
+}
+
+// Profile update data interface
+interface ProfileUpdateData {
+  name: string;
+  nickname: string;
+  phone: string;
+  email: string;
+  gender: string;
+  birthDate: string;
+  marketingYn: boolean;
+  smsYn: boolean;
+  emailYn: boolean;
+}
+
 interface ProfileEditModalProps {
   isOpen: boolean;
   onClose: () => void;
-  member: any;
-  onUpdate: (updatedData: any) => Promise<void>;
+  member: Member;
+  onUpdate: (updatedData: ProfileUpdateData) => Promise<void>;
 }
 
 interface EditFormData {

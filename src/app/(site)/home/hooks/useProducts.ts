@@ -12,7 +12,7 @@ export function useBestProducts() {
         setLoading(true);
         const data = await getBestProducts();
         setProducts(data);
-      } catch (err) {
+      } catch {
         setError('상품을 불러오는데 실패했습니다.');
       } finally {
         setLoading(false);
@@ -36,7 +36,7 @@ export function useDiscountProducts() {
         setLoading(true);
         const data = await getDiscountProducts();
         setProducts(data);
-      } catch (err) {
+      } catch {
         setError('할인 상품을 불러오는데 실패했습니다.');
       } finally {
         setLoading(false);

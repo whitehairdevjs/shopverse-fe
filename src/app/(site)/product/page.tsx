@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useCategories, type Category } from './hooks/useCategories';
+import { useCategories } from './hooks/useCategories';
 
 export default function ProductPage() {
   const { categoryHierarchy, loading, error } = useCategories();

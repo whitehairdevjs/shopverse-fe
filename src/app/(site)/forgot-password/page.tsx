@@ -8,7 +8,6 @@ export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
   const [toast, setToast] = useState<{
     message: string;
     type: 'success' | 'error' | 'warning' | 'info';
@@ -33,7 +32,6 @@ export default function ForgotPasswordPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     setIsLoading(true);
     
     try {
@@ -44,9 +42,9 @@ export default function ForgotPasswordPage() {
       } else {
         showToast(response.error || '비밀번호 재설정 이메일 전송에 실패했습니다.');
       }
-    } catch (error) {
+    } catch {
       // 비밀번호 재설정 이메일 전송 실패 처리
-      setError('이메일 전송 중 오류가 발생했습니다.');
+      showToast('이메일 전송 중 오류가 발생했습니다.');
     } finally {
       setIsLoading(false);
     }

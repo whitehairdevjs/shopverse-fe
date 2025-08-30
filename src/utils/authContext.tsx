@@ -4,11 +4,31 @@ import React, { createContext, useContext, useEffect } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { LoginRequest, api, authUtils } from './api';
 
+// Member interface
+interface Member {
+  id?: string;
+  name?: string;
+  email?: string;
+  loginId?: string;
+  [key: string]: unknown;
+}
+
+// Login response interface
+interface LoginResponse {
+  success: boolean;
+  data?: {
+    member: Member;
+    accessToken: string;
+  };
+  error?: string;
+  message?: string;
+}
+
 interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
-  member: any;
-  login: (loginData: LoginRequest) => Promise<any>;
+  member: Member | null;
+  login: (loginData: LoginRequest) => Promise<LoginResponse>;
   logout: () => Promise<void>;
   refreshAuth: () => Promise<void>;
   loadUserInfo: () => Promise<void>;
@@ -22,8 +42,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isAuthenticated,
     isLoading,
     member,
-    login,
-    setLoading,
   } = useAuthStore();
 
   useEffect(() => {
@@ -45,7 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const profileResponse = await api.member.getProfile();
           
           if (profileResponse.success && profileResponse.data) {
-            useAuthStore.getState().setMember(profileResponse.data as any);
+            useAuthStore.getState().setMember(profileResponse.data as Member);
             useAuthStore.getState().setAuthenticated(true);
           } else {
             useAuthStore.getState().setMember(null);
@@ -79,8 +97,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const response = await api.member.login(loginData);
         
         if (response.success) {
-          const memberData = (response.data as any)?.member;
-          const accessToken = (response.data as any)?.accessToken;
+          const memberData = (response.data as { member: Member; accessToken: string })?.member;
+          const accessToken = (response.data as { member: Member; accessToken: string })?.accessToken;
 
           if (memberData && accessToken) {
             useAuthStore.getState().login(accessToken, memberData);
@@ -91,7 +109,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
         
-        return response;
+        return response as LoginResponse;
       } catch (error) {
         console.error('로그인 에러:', error);
         return { success: false, error: '로그인 중 오류가 발생했습니다.' };
@@ -112,7 +130,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           try {
             const profileResponse = await api.member.getProfile();
             if (profileResponse.success && profileResponse.data) {
-              useAuthStore.getState().setMember(profileResponse.data as any);
+              useAuthStore.getState().setMember(profileResponse.data as Member);
               useAuthStore.getState().setAuthenticated(true);
             }
           } catch (profileError) {
@@ -128,7 +146,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const response = await api.member.getProfile();
         
         if (response.success && response.data) {
-          useAuthStore.getState().setMember(response.data as any);
+          useAuthStore.getState().setMember(response.data as Member);
           useAuthStore.getState().setAuthenticated(true);
         }
       } catch (error) {

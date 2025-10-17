@@ -335,14 +335,23 @@ export const api = {
 
   // Product API
   product: {
-    getList: (params?: unknown, options?: Omit<ApiRequestOptions, 'method'>) => 
-      apiClient.get(API_ENDPOINTS.PRODUCT.LIST, { body: params, ...options }),
+    getList: (
+      params?: Record<string, string | number | boolean | undefined>,
+      options?: Omit<ApiRequestOptions, 'method'>
+    ) => {
+      const entries = Object.entries(params ?? {}).filter(([_, v]) => v !== undefined && v !== '' && v !== null);
+      const query = entries
+        .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
+        .join('&');
+      const endpoint = query ? `${API_ENDPOINTS.PRODUCT.LIST}?${query}` : API_ENDPOINTS.PRODUCT.LIST;
+      return apiClient.get(endpoint, options);
+    },
     getDetail: (id: string | number, options?: Omit<ApiRequestOptions, 'method'>) => 
       apiClient.get(API_ENDPOINTS.PRODUCT.DETAIL.replace(':id', String(id)), options),
     search: (params: unknown, options?: Omit<ApiRequestOptions, 'method'>) => 
       apiClient.get(API_ENDPOINTS.PRODUCT.SEARCH, { body: params, ...options }),
     getByCategoryId: (categoryId: string | number, options?: Omit<ApiRequestOptions, 'method'>) => 
-      apiClient.get(`/product/category/${categoryId}`, options),
+      apiClient.get(API_ENDPOINTS.PRODUCT.LIST_BY_CATEGORY.replace(':categoryId', String(categoryId)), options),
     // Category API
     getCategories: (options?: Omit<ApiRequestOptions, 'method'>) => 
       apiClient.get(API_ENDPOINTS.PRODUCT.CATEGORIES, options),

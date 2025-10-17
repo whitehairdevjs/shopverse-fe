@@ -19,9 +19,10 @@ export const API_ENDPOINTS = {
   
   // Product related endpoints
   PRODUCT: {
-    LIST: '/products',
+    LIST: '/product/products',
     DETAIL: '/products/:id',
     SEARCH: '/products/search',
+    LIST_BY_CATEGORY: '/product/:categoryId',
     CATEGORIES: '/product/categories',
     CATEGORIES_ACTIVE: '/product/categories/active',
   },

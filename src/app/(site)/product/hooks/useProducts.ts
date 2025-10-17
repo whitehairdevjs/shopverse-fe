@@ -23,9 +23,12 @@ export const useProducts = (params: ProductListParams = {}): UseProductsResult =
     try {
       let response;
       
-      // 카테고리 ID가 있으면 카테고리별 상품 조회
-      if (params.categoryId) {
-        response = await api.product.getByCategoryId(params.categoryId);
+      // 가장 구체적인 선택(소분류 > 중분류 > 대분류)을 우선하여 카테고리별 상품 조회
+      const selectedCategoryId =
+        (params.detailCategoryId ?? params.subCategoryId ?? params.categoryId);
+
+      if (selectedCategoryId) {
+        response = await api.product.getByCategoryId(selectedCategoryId);
       } else {
         // 전체 상품 조회 (나중에 구현)
         response = await api.product.getList(params);

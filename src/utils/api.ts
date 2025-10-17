@@ -341,6 +341,8 @@ export const api = {
       apiClient.get(API_ENDPOINTS.PRODUCT.DETAIL.replace(':id', String(id)), options),
     search: (params: unknown, options?: Omit<ApiRequestOptions, 'method'>) => 
       apiClient.get(API_ENDPOINTS.PRODUCT.SEARCH, { body: params, ...options }),
+    getByCategoryId: (categoryId: string | number, options?: Omit<ApiRequestOptions, 'method'>) => 
+      apiClient.get(`/product/category/${categoryId}`, options),
     // Category API
     getCategories: (options?: Omit<ApiRequestOptions, 'method'>) => 
       apiClient.get(API_ENDPOINTS.PRODUCT.CATEGORIES, options),

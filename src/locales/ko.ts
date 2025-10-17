@@ -26,6 +26,11 @@ export const ko = {
       fashion: '패션',
       home: '홈&리빙',
       sports: '스포츠',
+      more: '전체 카테고리 보기 →',
+    },
+    live: {
+      title: '라이브 쇼핑',
+      more: '전체 라이브 보기 →',
     },
     bestProducts: {
       title: '베스트 상품',

@@ -3,11 +3,14 @@
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '../../stores/authStore';
 import { authUtils } from '../../utils/api';
+import { useTranslation } from '../../hooks/useTranslation';
+import LanguageToggle from './LanguageToggle';
 import Link from 'next/link';
 
 export default function Header() {
   const { isAuthenticated, member } = useAuthStore();
   const [mounted, setMounted] = useState(false);
+  const { t } = useTranslation();
 
   useEffect(() => {
     setMounted(true);
@@ -94,7 +97,7 @@ export default function Header() {
             <div className="relative">
               <input 
                 type="text" 
-                placeholder="찾고 싶은 상품을 검색해보세요"
+                placeholder={t('nav.search')}
                 className="w-full px-4 py-3 pl-12 pr-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
               />
               <svg className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -103,24 +106,27 @@ export default function Header() {
             </div>
           </div>
           
-          {/* 우측 메뉴 */}
-          <div className="flex items-center space-x-6">
+            {/* 우측 메뉴 */}
+            <div className="flex items-center space-x-4">
+              <LanguageToggle />
+            </div>
+            <div className="flex items-center space-x-6">
             {/* 사용자 프로필 */}
             {isAuthenticated ? (
               <div className="flex items-center space-x-4">
                 <span className="text-sm text-gray-700">
-                  안녕하세요, {member?.name || 'unknown'}님
+                  {t('nav.hello', { name: member?.name || 'unknown' })}
                 </span>                
                 
                 <button 
                   onClick={handleLogout}
                   className="flex items-center space-x-1 text-sm text-gray-700 hover:text-orange-500 transition-colors"
-                  title="로그아웃"
+                  title={t('nav.logout')}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                   </svg>
-                  <span>로그아웃</span>
+                  <span>{t('nav.logout')}</span>
                 </button>
               </div>
             ) : (
@@ -128,7 +134,7 @@ export default function Header() {
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
                 </svg>
-                <span>로그인</span>
+                <span>{t('nav.login')}</span>
               </Link>
             )}
             
@@ -137,7 +143,7 @@ export default function Header() {
               <Link 
                 href="/mypage" 
                 className="text-gray-700 hover:text-orange-500 transition-colors"
-                title="마이페이지"
+                title={t('nav.mypage')}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -159,13 +165,13 @@ export default function Header() {
         {/* 카테고리 네비게이션 */}
         <nav className="flex space-x-8 py-3 border-t border-gray-100">
           <Link href="/home" className="text-sm text-gray-700 hover:text-orange-500 transition-colors">
-            홈
+            {t('nav.home')}
           </Link>
           <Link href="/product" className="text-sm text-gray-700 hover:text-orange-500 transition-colors">
-            상품
+            {t('nav.product')}
           </Link>
           <Link href="/live" className="text-sm text-gray-700 hover:text-orange-500 transition-colors">
-            라이브
+            {t('nav.live')}
           </Link>
         </nav>
       </div>

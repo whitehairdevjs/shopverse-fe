@@ -350,8 +350,7 @@ export const api = {
       apiClient.get(API_ENDPOINTS.PRODUCT.DETAIL.replace(':id', String(id)), options),
     search: (params: unknown, options?: Omit<ApiRequestOptions, 'method'>) => 
       apiClient.get(API_ENDPOINTS.PRODUCT.SEARCH, { body: params, ...options }),
-    getByCategoryId: (categoryId: string | number, options?: Omit<ApiRequestOptions, 'method'>) => 
-      apiClient.get(API_ENDPOINTS.PRODUCT.LIST_BY_CATEGORY.replace(':categoryId', String(categoryId)), options),
+    // getByCategoryId removed: unified paginated list endpoint now supports categoryId filter
     // Category API
     getCategories: (options?: Omit<ApiRequestOptions, 'method'>) => 
       apiClient.get(API_ENDPOINTS.PRODUCT.CATEGORIES, options),

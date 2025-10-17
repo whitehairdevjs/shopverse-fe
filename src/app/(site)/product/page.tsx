@@ -13,6 +13,8 @@ export default function ProductPage() {
   const [selectedSubCategory, setSelectedSubCategory] = useState<string>('');
   const [selectedDetailCategory, setSelectedDetailCategory] = useState<string>('');
   const [selectedSort, setSelectedSort] = useState<string>('');
+  const [page, setPage] = useState<number>(1);
+  const [pageSize] = useState<number>(10);
 
   // 상품 조회 파라미터 설정
   const productParams: ProductListParams = {
@@ -20,10 +22,12 @@ export default function ProductPage() {
     subCategoryId: selectedSubCategory ? parseInt(selectedSubCategory) : undefined,
     detailCategoryId: selectedDetailCategory ? parseInt(selectedDetailCategory) : undefined,
     sort: selectedSort as any,
+    page,
+    size: pageSize,
   };
 
   // 상품 데이터 조회
-  const { products, loading: productsLoading, error: productsError } = useProducts(productParams);
+  const { products, loading: productsLoading, error: productsError, pagination } = useProducts(productParams);
 
   // URL 파라미터에서 카테고리 ID 추출 및 자동 선택
   useEffect(() => {
@@ -36,10 +40,12 @@ export default function ProductPage() {
   useEffect(() => {
     setSelectedSubCategory('');
     setSelectedDetailCategory('');
+    setPage(1);
   }, [selectedMainCategory]);
 
   useEffect(() => {
     setSelectedDetailCategory('');
+    setPage(1);
   }, [selectedSubCategory]);
 
   const currentSubCategories = selectedMainCategory 
@@ -51,7 +57,18 @@ export default function ProductPage() {
     : [];
 
   const handleFilterApply = () => {
-    // 필터 적용 시 상품 데이터가 자동으로 다시 조회됩니다 (useProducts 훅에서 처리)
+    setPage(1);
+  };
+
+  const getPageNumbers = () => {
+    const total = pagination?.totalPages || 1;
+    const current = pagination?.currentPage || 1;
+    const windowSize = 5;
+    const start = Math.max(1, current - Math.floor(windowSize / 2));
+    const end = Math.min(total, start + windowSize - 1);
+    const pages = [] as number[];
+    for (let i = Math.max(1, end - windowSize + 1); i <= end; i++) pages.push(i);
+    return pages;
   };
 
   const getSelectedCategoryPath = () => {
@@ -194,7 +211,7 @@ export default function ProductPage() {
             <select 
               className="border border-gray-300 rounded-lg px-3 py-2"
               value={selectedSort}
-              onChange={(e) => setSelectedSort(e.target.value)}
+              onChange={(e) => { setSelectedSort(e.target.value); setPage(1); }}
             >
               <option value="">정렬</option>
               <option value="latest">최신순</option>
@@ -374,13 +391,31 @@ export default function ProductPage() {
 
 
         {/* 페이지네이션 */}
-        <div className="flex justify-center mt-8">
-          <nav className="flex items-center space-x-2">
-            <button className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">이전</button>
-            <button className="px-3 py-2 bg-orange-500 text-white rounded-lg">1</button>
-            <button className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">2</button>
-            <button className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">3</button>
-            <button className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">다음</button>
+        <div className="flex justify-center mt-6 sm:mt-8">
+          <nav className="flex items-center space-x-1 sm:space-x-2">
+            <button
+              disabled={!pagination?.hasPrevious || productsLoading}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className={`px-2 sm:px-3 py-2 border rounded-lg text-sm ${(!pagination?.hasPrevious || productsLoading) ? 'border-gray-200 text-gray-300 cursor-not-allowed' : 'border-gray-300 hover:bg-gray-50'}`}
+            >
+              이전
+            </button>
+            {getPageNumbers().map((p) => (
+              <button
+                key={p}
+                onClick={() => setPage(p)}
+                className={`px-2 sm:px-3 py-2 rounded-lg text-sm ${p === pagination?.currentPage ? 'bg-orange-500 text-white' : 'border border-gray-300 hover:bg-gray-50'}`}
+              >
+                {p}
+              </button>
+            ))}
+            <button
+              disabled={!pagination?.hasNext || productsLoading}
+              onClick={() => setPage((p) => p + 1)}
+              className={`px-2 sm:px-3 py-2 border rounded-lg text-sm ${(!pagination?.hasNext || productsLoading) ? 'border-gray-200 text-gray-300 cursor-not-allowed' : 'border-gray-300 hover:bg-gray-50'}`}
+            >
+              다음
+            </button>
           </nav>
         </div>
       </div>

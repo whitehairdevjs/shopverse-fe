@@ -106,11 +106,11 @@ export default function Header() {
             </div>
           </div>
           
-            {/* 우측 메뉴 */}
-            <div className="flex items-center space-x-4">
-              <LanguageToggle />
-            </div>
-            <div className="flex items-center space-x-6">
+          {/* 우측 메뉴 */}
+          <div className="flex items-center space-x-6">
+            {/* 언어 선택 */}
+            <LanguageToggle />
+            
             {/* 사용자 프로필 */}
             {isAuthenticated ? (
               <div className="flex items-center space-x-4">

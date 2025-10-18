@@ -1,20 +1,38 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useCategories } from './hooks/useCategories';
 import { useProducts } from './hooks/useProducts';
+import { useAuthStore } from '@/stores/authStore';
+import { useCartStore } from '@/stores/cartStore';
+import Toast from '@/components/common/Toast';
 import type { ProductListParams } from './types';
 
 export default function ProductPage() {
   const { categoryHierarchy, loading: categoriesLoading, error: categoriesError } = useCategories();
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const { isAuthenticated } = useAuthStore();
+  const { addItem } = useCartStore();
+  
   const [selectedMainCategory, setSelectedMainCategory] = useState<string>('');
   const [selectedSubCategory, setSelectedSubCategory] = useState<string>('');
   const [selectedDetailCategory, setSelectedDetailCategory] = useState<string>('');
   const [selectedSort, setSelectedSort] = useState<string>('');
   const [page, setPage] = useState<number>(1);
   const [pageSize] = useState<number>(10);
+  
+  // 토스트 상태
+  const [toast, setToast] = useState<{
+    message: string;
+    type: 'success' | 'error' | 'warning' | 'info';
+    isVisible: boolean;
+  }>({
+    message: '',
+    type: 'info',
+    isVisible: false,
+  });
 
   // 상품 조회 파라미터 설정
   const productParams: ProductListParams = {
@@ -55,10 +73,6 @@ export default function ProductPage() {
   const currentDetailCategories = selectedSubCategory 
     ? categoryHierarchy.detailCategories.filter(cat => cat.parentId === parseInt(selectedSubCategory))
     : [];
-
-  const handleFilterApply = () => {
-    setPage(1);
-  };
 
   const getPageNumbers = () => {
     const total = pagination?.totalPages || 1;
@@ -114,6 +128,43 @@ export default function ProductPage() {
   const currentMainCategory = selectedMainCategory 
     ? categoryHierarchy.mainCategories.find(cat => cat.id === parseInt(selectedMainCategory))
     : null;
+
+  // 토스트 표시 함수
+  const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info') => {
+    setToast({
+      message,
+      type,
+      isVisible: true,
+    });
+  };
+
+  // 토스트 닫기 함수
+  const hideToast = () => {
+    setToast(prev => ({ ...prev, isVisible: false }));
+  };
+
+  // 장바구니 추가 함수
+  const handleAddToCart = (product: any) => {
+    if (!isAuthenticated) {
+      showToast('로그인이 필요합니다. 로그인 페이지로 이동합니다.', 'warning');
+      setTimeout(() => {
+        router.push('/login');
+      }, 1500);
+      return;
+    }
+
+    try {
+      addItem({
+        id: product.id.toString(),
+        name: product.name,
+        price: product.price,
+        image: '', // 실제 이미지 URL이 있다면 여기에 추가
+      });
+      showToast(`${product.name}이(가) 장바구니에 추가되었습니다.`, 'success');
+    } catch (error) {
+      showToast('장바구니 추가 중 오류가 발생했습니다.', 'error');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -218,15 +269,6 @@ export default function ProductPage() {
               <option value="price-low">가격낮은순</option>
               <option value="price-high">가격높은순</option>
             </select>
-            
-            {/* 필터 적용 버튼 */}
-            <button 
-              className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-              onClick={handleFilterApply}
-              disabled={categoriesLoading || productsLoading || (!selectedMainCategory && !selectedSort)}
-            >
-              필터 적용
-            </button>
           </div>
           
           {/* 선택된 카테고리 정보 표시 */}
@@ -375,7 +417,10 @@ export default function ProductPage() {
                       </div>
                     )}
                     <div className="flex gap-2">
-                      <button className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded transition-colors">
+                      <button 
+                        onClick={() => handleAddToCart(product)}
+                        className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded transition-colors"
+                      >
                         장바구니
                       </button>
                       <button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition-colors">
@@ -419,6 +464,15 @@ export default function ProductPage() {
           </nav>
         </div>
       </div>
+      
+      {/* 토스트 컴포넌트 */}
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onClose={hideToast}
+        duration={1500}
+      />
     </div>
   );
 } 

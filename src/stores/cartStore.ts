@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, devtools } from 'zustand/middleware';
 
 export interface CartItem {
   id: string;
@@ -21,8 +21,9 @@ interface CartStore {
 }
 
 export const useCartStore = create<CartStore>()(
-  persist(
-    (set, get) => ({
+  devtools(
+    persist(
+      (set, get) => ({
       items: [],
       
       addItem: (item) => {
@@ -76,10 +77,12 @@ export const useCartStore = create<CartStore>()(
         const { items } = get();
         return items.reduce((total, item) => total + item.quantity, 0);
       }
-    }),
-    {
-      name: 'cart-storage',
-      partialize: (state) => ({ items: state.items })
-    }
+      }),
+      {
+        name: 'cart-storage',
+        partialize: (state) => ({ items: state.items })
+      }
+    ),
+    { name: 'cart-store', enabled: process.env.NODE_ENV === 'development' } as any
   )
 ); 

@@ -22,9 +22,18 @@ interface AuthActions {
   clearAuth: () => void;
 }
 
+const persistOptions = {
+  name: 'auth-storage',
+  partialize: (state: AuthState & AuthActions) => ({
+    accessToken: state.accessToken,
+    member: state.member,
+    isAuthenticated: state.isAuthenticated,
+  }),
+};
+
 export const useAuthStore = create<AuthState & AuthActions>()(
   devtools(
-    persist(
+    persist<AuthState & AuthActions>(
       (set) => ({
         // State
         accessToken: null,
@@ -32,19 +41,17 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         isAuthenticated: false,
         isLoading: true,
 
-        setAccessToken: (token) => set({ accessToken: token }),
-        setMember: (member) => set({ member }),
-        setAuthenticated: (authenticated) => set({ isAuthenticated: authenticated }),
-        setLoading: (loading) => set({ isLoading: loading }),
+        setAccessToken: (token: string) => set({ accessToken: token }),
+        setMember: (member: Member | null) => set({ member }),
+        setAuthenticated: (authenticated: boolean) => set({ isAuthenticated: authenticated }),
+        setLoading: (loading: boolean) => set({ isLoading: loading }),
         
-        login: (token, member) => set({
+        login: (token: string, member: Member) => set({
           accessToken: token,
           member,
           isAuthenticated: true,
           isLoading: false,
         }),
-        
-
         
         clearAuth: () => set({
           accessToken: null,
@@ -53,17 +60,8 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           isLoading: false,
         }),
       }),
-      {
-        name: 'auth-storage',
-        partialize: (state) => ({
-          accessToken: state.accessToken,
-          member: state.member,
-          isAuthenticated: state.isAuthenticated,
-        }),
-      }
+      persistOptions as any
     ),
-    {
-      name: 'auth-store', // Redux DevTools에서 보일 이름
-    }
+    { name: 'auth-store', enabled: process.env.NODE_ENV === 'development' } as any
   )
 );

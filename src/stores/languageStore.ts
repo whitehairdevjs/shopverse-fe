@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, devtools } from 'zustand/middleware';
 
 export type Language = 'ko' | 'en';
 
@@ -10,17 +10,20 @@ interface LanguageStore {
 }
 
 export const useLanguageStore = create<LanguageStore>()(
-  persist(
-    (set, get) => ({
-      language: 'ko',
-      setLanguage: (language: Language) => set({ language }),
-      toggleLanguage: () => {
-        const currentLanguage = get().language;
-        set({ language: currentLanguage === 'ko' ? 'en' : 'ko' });
-      },
-    }),
-    {
-      name: 'language-storage',
-    }
+  devtools(
+    persist(
+      (set, get) => ({
+        language: 'ko',
+        setLanguage: (language: Language) => set({ language }),
+        toggleLanguage: () => {
+          const currentLanguage = get().language;
+          set({ language: currentLanguage === 'ko' ? 'en' : 'ko' });
+        },
+      }),
+      {
+        name: 'language-storage',
+      }
+    ),
+    { name: 'language-store', enabled: process.env.NODE_ENV === 'development' } as any
   )
 );

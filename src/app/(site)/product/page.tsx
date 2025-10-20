@@ -1,24 +1,30 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useCategories } from './hooks/useCategories';
 import { useProducts } from './hooks/useProducts';
 import { useAuthStore } from '@/stores/authStore';
 import { useCartStore } from '@/stores/cartStore';
+import { useCategoryStore } from '@/stores/categoryStore';
 import Toast from '@/components/common/Toast';
 import type { ProductListParams } from './types';
 
 export default function ProductPage() {
-  const { categoryHierarchy, loading: categoriesLoading, error: categoriesError } = useCategories();
-  const searchParams = useSearchParams();
+  const { categoryHierarchy, categoryOptions, loading: categoriesLoading, error: categoriesError } = useCategories();
   const router = useRouter();
   const { isAuthenticated } = useAuthStore();
   const { addItem } = useCartStore();
+  const { 
+    selectedMainCategory: storeMainCategory, 
+    selectedSubCategory: storeSubCategory, 
+    selectedDetailCategory: storeDetailCategory, 
+    setSelectedMainCategory: setStoreMainCategory,
+    setSelectedSubCategory: setStoreSubCategory,
+    setSelectedDetailCategory: setStoreDetailCategory,
+    clearSelection 
+  } = useCategoryStore();
   
-  const [selectedMainCategory, setSelectedMainCategory] = useState<string>('');
-  const [selectedSubCategory, setSelectedSubCategory] = useState<string>('');
-  const [selectedDetailCategory, setSelectedDetailCategory] = useState<string>('');
   const [selectedSort, setSelectedSort] = useState<string>('');
   const [page, setPage] = useState<number>(1);
   const [pageSize] = useState<number>(10);
@@ -34,11 +40,11 @@ export default function ProductPage() {
     isVisible: false,
   });
 
-  // 상품 조회 파라미터 설정
+  // 상품 조회 파라미터 설정 (스토어 값 직접 사용)
   const productParams: ProductListParams = {
-    categoryId: selectedMainCategory ? parseInt(selectedMainCategory) : undefined,
-    subCategoryId: selectedSubCategory ? parseInt(selectedSubCategory) : undefined,
-    detailCategoryId: selectedDetailCategory ? parseInt(selectedDetailCategory) : undefined,
+    categoryId: storeMainCategory ? parseInt(storeMainCategory) : undefined,
+    subCategoryId: storeSubCategory ? parseInt(storeSubCategory) : undefined,
+    detailCategoryId: storeDetailCategory ? parseInt(storeDetailCategory) : undefined,
     sort: selectedSort as any,
     page,
     size: pageSize,
@@ -47,31 +53,33 @@ export default function ProductPage() {
   // 상품 데이터 조회
   const { products, loading: productsLoading, error: productsError, pagination } = useProducts(productParams);
 
-  // URL 파라미터에서 카테고리 ID 추출 및 자동 선택
-  useEffect(() => {
-    const mainCategoryId = searchParams.get('mainCategoryId');
-    if (mainCategoryId && !categoriesLoading && categoryHierarchy.mainCategories.length > 0) {
-      setSelectedMainCategory(mainCategoryId);
-    }
-  }, [searchParams, categoriesLoading, categoryHierarchy.mainCategories]);
-
-  useEffect(() => {
-    setSelectedSubCategory('');
-    setSelectedDetailCategory('');
+  // 대분류 변경 시 하위 카테고리 초기화 핸들러
+  const handleMainCategoryChange = (categoryId: string) => {
+    setStoreMainCategory(categoryId);
+    setStoreSubCategory('');
+    setStoreDetailCategory('');
     setPage(1);
-  }, [selectedMainCategory]);
+  };
 
-  useEffect(() => {
-    setSelectedDetailCategory('');
+  // 중분류 변경 시 하위 카테고리 초기화 핸들러
+  const handleSubCategoryChange = (categoryId: string) => {
+    setStoreSubCategory(categoryId);
+    setStoreDetailCategory('');
     setPage(1);
-  }, [selectedSubCategory]);
+  };
 
-  const currentSubCategories = selectedMainCategory 
-    ? categoryHierarchy.subCategories.filter(cat => cat.parentId === parseInt(selectedMainCategory))
+  // 소분류 변경 핸들러
+  const handleDetailCategoryChange = (categoryId: string) => {
+    setStoreDetailCategory(categoryId);
+    setPage(1);
+  };
+
+  const currentSubCategories = storeMainCategory 
+    ? categoryHierarchy.subCategories.filter(cat => cat.parentId === parseInt(storeMainCategory))
     : [];
 
-  const currentDetailCategories = selectedSubCategory 
-    ? categoryHierarchy.detailCategories.filter(cat => cat.parentId === parseInt(selectedSubCategory))
+  const currentDetailCategories = storeSubCategory 
+    ? categoryHierarchy.detailCategories.filter(cat => cat.parentId === parseInt(storeSubCategory))
     : [];
 
   const getPageNumbers = () => {
@@ -88,35 +96,35 @@ export default function ProductPage() {
   const getSelectedCategoryPath = () => {
     const path: { name: string; id: string; href: string }[] = [];
     
-    if (selectedMainCategory) {
-      const mainCat = categoryHierarchy.mainCategories.find(cat => cat.id === parseInt(selectedMainCategory));
+    if (storeMainCategory) {
+      const mainCat = categoryHierarchy.mainCategories.find(cat => cat.id === parseInt(storeMainCategory));
       if (mainCat) {
         path.push({
           name: mainCat.name,
           id: mainCat.id.toString(),
-          href: `/product?mainCategoryId=${mainCat.id}`
+          href: `/product`
         });
       }
     }
     
-    if (selectedSubCategory) {
-      const subCat = categoryHierarchy.subCategories.find(cat => cat.id === parseInt(selectedSubCategory));
+    if (storeSubCategory) {
+      const subCat = categoryHierarchy.subCategories.find(cat => cat.id === parseInt(storeSubCategory));
       if (subCat) {
         path.push({
           name: subCat.name,
           id: subCat.id.toString(),
-          href: `/product?mainCategoryId=${selectedMainCategory}&subCategoryId=${subCat.id}`
+          href: `/product`
         });
       }
     }
     
-    if (selectedDetailCategory) {
-      const detailCat = categoryHierarchy.detailCategories.find(cat => cat.id === parseInt(selectedDetailCategory));
+    if (storeDetailCategory) {
+      const detailCat = categoryHierarchy.detailCategories.find(cat => cat.id === parseInt(storeDetailCategory));
       if (detailCat) {
         path.push({
           name: detailCat.name,
           id: detailCat.id.toString(),
-          href: `/product?mainCategoryId=${selectedMainCategory}&subCategoryId=${selectedSubCategory}&detailCategoryId=${detailCat.id}`
+          href: `/product`
         });
       }
     }
@@ -125,8 +133,8 @@ export default function ProductPage() {
   };
 
   // 현재 선택된 메인 카테고리 정보
-  const currentMainCategory = selectedMainCategory 
-    ? categoryHierarchy.mainCategories.find(cat => cat.id === parseInt(selectedMainCategory))
+  const currentMainCategory = storeMainCategory 
+    ? categoryHierarchy.mainCategories.find(cat => cat.id === parseInt(storeMainCategory))
     : null;
 
   // 토스트 표시 함수
@@ -204,22 +212,21 @@ export default function ProductPage() {
             {/* 대분류 선택 */}
             <select 
               className={`border rounded-lg px-3 py-2 ${
-                selectedMainCategory 
+                storeMainCategory 
                   ? 'border-orange-500 bg-orange-50 text-orange-700' 
                   : 'border-gray-300'
               }`}
-              value={selectedMainCategory}
-              onChange={(e) => setSelectedMainCategory(e.target.value)}
+              value={storeMainCategory}
+              onChange={(e) => handleMainCategoryChange(e.target.value)}
               disabled={categoriesLoading}
             >
-              <option value="">대분류 선택</option>
               {categoriesLoading ? (
                 <option disabled>로딩 중...</option>
               ) : categoriesError ? (
                 <option disabled>오류 발생</option>
               ) : (
-                categoryHierarchy.mainCategories.map((category) => (
-                  <option key={category.id} value={category.id}>
+                categoryOptions.mainCategoryOptions.map((category) => (
+                  <option key={category.id} value={category.id === 0 ? '' : category.id}>
                     {category.name}
                   </option>
                 ))
@@ -227,34 +234,40 @@ export default function ProductPage() {
             </select>
             
             {/* 중분류 선택 (대분류가 선택된 경우에만 표시) */}
-            {selectedMainCategory && currentSubCategories.length > 0 && (
+            {storeMainCategory && (
               <select 
                 className="border border-gray-300 rounded-lg px-3 py-2"
-                value={selectedSubCategory}
-                onChange={(e) => setSelectedSubCategory(e.target.value)}
+                value={storeSubCategory}
+                onChange={(e) => handleSubCategoryChange(e.target.value)}
               >
-                <option value="">중분류 선택</option>
-                {currentSubCategories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
+                {currentSubCategories.length > 0 ? (
+                  categoryOptions.subCategoryOptions
+                    .filter(category => category.id === 0 || currentSubCategories.some(sub => sub.id === category.id))
+                    .map((category) => (
+                      <option key={category.id} value={category.id === 0 ? '' : category.id}>
+                        {category.name}
+                      </option>
+                    ))
+                ) : (
+                  <option value="">중분류 없음</option>
+                )}
               </select>
             )}
             
             {/* 소분류 선택 (중분류가 선택되고 소분류가 있는 경우에만 표시) */}
-            {selectedSubCategory && currentDetailCategories.length > 0 && (
+            {storeSubCategory && currentDetailCategories.length > 0 && (
               <select 
                 className="border border-gray-300 rounded-lg px-3 py-2"
-                value={selectedDetailCategory}
-                onChange={(e) => setSelectedDetailCategory(e.target.value)}
+                value={storeDetailCategory}
+                onChange={(e) => handleDetailCategoryChange(e.target.value)}
               >
-                <option value="">소분류 선택</option>
-                {currentDetailCategories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
+                {categoryOptions.detailCategoryOptions
+                  .filter(category => category.id === 0 || currentDetailCategories.some(detail => detail.id === category.id))
+                  .map((category) => (
+                    <option key={category.id} value={category.id === 0 ? '' : category.id}>
+                      {category.name}
+                    </option>
+                  ))}
               </select>
             )}
             
@@ -285,9 +298,7 @@ export default function ProductPage() {
                 </div>
                 <button 
                   onClick={() => {
-                    setSelectedMainCategory('');
-                    setSelectedSubCategory('');
-                    setSelectedDetailCategory('');
+                    clearSelection(); // 스토어 초기화
                   }}
                   className="text-xs text-orange-600 hover:text-orange-800 underline"
                 >
@@ -336,17 +347,15 @@ export default function ProductPage() {
           <div className="text-center py-12">
             <div className="text-gray-400 text-6xl mb-4">🔍</div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              {selectedMainCategory ? '해당 카테고리에 상품이 없습니다' : '상품이 없습니다'}
+              {storeMainCategory ? '해당 카테고리에 상품이 없습니다' : '상품이 없습니다'}
             </h3>
             <p className="text-gray-500 mb-4">
               다른 카테고리를 선택하거나 필터를 조정해보세요
             </p>
-            {selectedMainCategory && (
+            {storeMainCategory && (
               <button 
                 onClick={() => {
-                  setSelectedMainCategory('');
-                  setSelectedSubCategory('');
-                  setSelectedDetailCategory('');
+                  clearSelection(); // 스토어 초기화
                 }}
                 className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg transition-colors"
               >
@@ -374,13 +383,7 @@ export default function ProductPage() {
               return (
                 <div key={product.id} className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden">
                   <div className="bg-gray-100 h-48 flex items-center justify-center text-4xl">
-                    {/* 실제 이미지가 없으므로 카테고리별 이모지 표시 */}
-                    {product.categoryId === 1 ? '📱' : 
-                     product.categoryId === 2 ? '👕' : 
-                     product.categoryId === 3 ? '🏠' : 
-                     product.categoryId === 4 ? '⚽' : 
-                     product.categoryId === 5 ? '💄' : 
-                     product.categoryId === 6 ? '📚' : '📦'}
+                    📦
                   </div>
                   <div className="p-4">
                     <h3 className="font-medium text-gray-900 mb-2 line-clamp-2">{product.name}</h3>

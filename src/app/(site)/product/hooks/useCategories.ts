@@ -25,12 +25,23 @@ export interface CategoryHierarchy {
   detailCategories: Category[]; // 소분류
 }
 
+export interface CategoryOptions {
+  mainCategoryOptions: Category[]; // 기본 옵션 포함 대분류
+  subCategoryOptions: Category[];  // 기본 옵션 포함 중분류
+  detailCategoryOptions: Category[]; // 기본 옵션 포함 소분류
+}
+
 export const useCategories = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryHierarchy, setCategoryHierarchy] = useState<CategoryHierarchy>({
     mainCategories: [],
     subCategories: [],
     detailCategories: []
+  });
+  const [categoryOptions, setCategoryOptions] = useState<CategoryOptions>({
+    mainCategoryOptions: [],
+    subCategoryOptions: [],
+    detailCategoryOptions: []
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,6 +63,10 @@ export const useCategories = () => {
           // 계층 구조로 분류
           const hierarchy = categorizeByHierarchy(allCategories);
           setCategoryHierarchy(hierarchy);
+          
+          // 기본 옵션 포함한 카테고리 옵션 생성
+          const options = createCategoryOptions(hierarchy);
+          setCategoryOptions(options);
         } else {
           throw new Error(response.message || '카테고리를 불러오는데 실패했습니다.');
         }
@@ -96,9 +111,31 @@ export const useCategories = () => {
     };
   };
 
+  // 기본 옵션 포함한 카테고리 옵션 생성 함수
+  const createCategoryOptions = (hierarchy: CategoryHierarchy): CategoryOptions => {
+    // 기본 "선택" 옵션을 위한 더미 카테고리 생성
+    const createDefaultOption = (label: string): Category => ({
+      id: 0,
+      code: '',
+      name: label,
+      slug: '',
+      sortOrder: 0,
+      isActive: true,
+      createdAt: '',
+      updatedAt: ''
+    });
+
+    return {
+      mainCategoryOptions: [createDefaultOption('대분류 선택'), ...hierarchy.mainCategories],
+      subCategoryOptions: [createDefaultOption('중분류 선택'), ...hierarchy.subCategories],
+      detailCategoryOptions: [createDefaultOption('소분류 선택'), ...hierarchy.detailCategories]
+    };
+  };
+
   return { 
     categories, 
     categoryHierarchy,
+    categoryOptions,
     loading, 
     error
   };

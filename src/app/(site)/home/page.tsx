@@ -2,11 +2,22 @@
 
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useCategories } from '../product/hooks/useCategories';
+import { useCategoryStore } from '@/stores/categoryStore';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 export default function HomePage() {
   const { t } = useTranslation();
   const { categoryHierarchy, loading, error } = useCategories();
+  const { setSelectedMainCategory, clearSelection } = useCategoryStore();
+  const router = useRouter();
+
+  // 카테고리 클릭 핸들러
+  const handleCategoryClick = (categoryId: string) => {
+    clearSelection(); // 기존 선택 초기화
+    setSelectedMainCategory(categoryId);
+    router.push('/product');
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -54,10 +65,10 @@ export default function HomePage() {
                 const emoji = categoryEmojis[index] || '📦';
                 
                 return (
-                  <Link
+                  <button
                     key={category.id}
-                    href={`/product?mainCategoryId=${category.id}`}
-                    className="bg-white p-3 sm:p-4 lg:p-6 rounded-lg text-center hover:shadow-md transition-all duration-200 hover:scale-105 group min-h-[100px] sm:min-h-[120px] flex flex-col justify-center"
+                    onClick={() => handleCategoryClick(category.id.toString())}
+                    className="bg-white p-3 sm:p-4 lg:p-6 rounded-lg text-center hover:shadow-md transition-all duration-200 hover:scale-105 group min-h-[100px] sm:min-h-[120px] flex flex-col justify-center w-full"
                   >
                     <div className="text-2xl sm:text-3xl lg:text-4xl mb-2 sm:mb-3 group-hover:scale-110 transition-transform duration-200">
                       {emoji}
@@ -65,7 +76,7 @@ export default function HomePage() {
                     <h3 className="font-medium text-gray-900 group-hover:text-orange-500 transition-colors text-xs sm:text-sm lg:text-base leading-tight">
                       {category.name}
                     </h3>
-                  </Link>
+                  </button>
                 );
               })}
             </div>

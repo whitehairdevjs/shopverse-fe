@@ -24,6 +24,6 @@ export const useLanguageStore = create<LanguageStore>()(
         name: 'language-storage',
       }
     ),
-    { name: 'language-store', enabled: process.env.NODE_ENV === 'development' } as any
+    { name: 'language-store', enabled: process.env.NODE_ENV === 'development' }
   )
 );

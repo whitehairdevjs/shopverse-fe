@@ -339,7 +339,7 @@ export const api = {
       params?: Record<string, string | number | boolean | undefined>,
       options?: Omit<ApiRequestOptions, 'method'>
     ) => {
-      const entries = Object.entries(params ?? {}).filter(([_, v]) => v !== undefined && v !== '' && v !== null);
+      const entries = Object.entries(params ?? {}).filter(([, v]) => v !== undefined && v !== '' && v !== null);
       const query = entries
         .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
         .join('&');

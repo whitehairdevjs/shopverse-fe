@@ -60,8 +60,8 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           isLoading: false,
         }),
       }),
-      persistOptions as any
+      persistOptions as Parameters<typeof persist<AuthState & AuthActions>>[1]
     ),
-    { name: 'auth-store', enabled: process.env.NODE_ENV === 'development' } as any
+    { name: 'auth-store', enabled: process.env.NODE_ENV === 'development' }
   )
 );

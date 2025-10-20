@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCategories } from './hooks/useCategories';
 import { useProducts } from './hooks/useProducts';
@@ -8,7 +8,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useCartStore } from '@/stores/cartStore';
 import { useCategoryStore } from '@/stores/categoryStore';
 import Toast from '@/components/common/Toast';
-import type { ProductListParams } from './types';
+import type { ProductListParams, Product } from './types';
 
 export default function ProductPage() {
   const { categoryHierarchy, categoryOptions, loading: categoriesLoading, error: categoriesError } = useCategories();
@@ -25,7 +25,7 @@ export default function ProductPage() {
     clearSelection 
   } = useCategoryStore();
   
-  const [selectedSort, setSelectedSort] = useState<string>('');
+  const [selectedSort, setSelectedSort] = useState<'latest' | 'price-low' | 'price-high' | 'popular' | 'rating' | ''>('');
   const [page, setPage] = useState<number>(1);
   const [pageSize] = useState<number>(10);
   
@@ -45,7 +45,7 @@ export default function ProductPage() {
     categoryId: storeMainCategory ? parseInt(storeMainCategory) : undefined,
     subCategoryId: storeSubCategory ? parseInt(storeSubCategory) : undefined,
     detailCategoryId: storeDetailCategory ? parseInt(storeDetailCategory) : undefined,
-    sort: selectedSort as any,
+    sort: selectedSort || undefined,
     page,
     size: pageSize,
   };
@@ -152,7 +152,7 @@ export default function ProductPage() {
   };
 
   // 장바구니 추가 함수
-  const handleAddToCart = (product: any) => {
+  const handleAddToCart = (product: Product) => {
     if (!isAuthenticated) {
       showToast('로그인이 필요합니다. 로그인 페이지로 이동합니다.', 'warning');
       setTimeout(() => {
@@ -170,7 +170,8 @@ export default function ProductPage() {
       });
       showToast(`${product.name}이(가) 장바구니에 추가되었습니다.`, 'success');
     } catch (error) {
-      showToast('장바구니 추가 중 오류가 발생했습니다.', 'error');
+      const errorMessage = error instanceof Error ? error.message : '장바구니 추가 중 오류가 발생했습니다.';
+      showToast(errorMessage, 'error');
     }
   };
 
@@ -275,7 +276,7 @@ export default function ProductPage() {
             <select 
               className="border border-gray-300 rounded-lg px-3 py-2"
               value={selectedSort}
-              onChange={(e) => { setSelectedSort(e.target.value); setPage(1); }}
+              onChange={(e) => { setSelectedSort(e.target.value as 'latest' | 'price-low' | 'price-high' | 'popular' | 'rating' | ''); setPage(1); }}
             >
               <option value="">정렬</option>
               <option value="latest">최신순</option>

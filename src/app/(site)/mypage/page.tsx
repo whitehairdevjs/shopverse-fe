@@ -204,12 +204,14 @@ export default function MyPage() {
         </div>
         
         {/* 개인정보 수정 모달 */}
-        <ProfileEditModal
-          isOpen={isEditModalOpen}
-          onClose={closeEditModal}
-          member={member}
-          onUpdate={handleUpdateProfile}
-        />
+        {member && (
+          <ProfileEditModal
+            isOpen={isEditModalOpen}
+            onClose={closeEditModal}
+            member={member}
+            onUpdate={handleUpdateProfile}
+          />
+        )}
         
         {/* 토스트 알림 */}
         <Toast

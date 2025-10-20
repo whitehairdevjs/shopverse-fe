@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/utils/api';
 import type { Product, ProductListParams, ProductListResponse } from '../types';
 
@@ -30,7 +30,7 @@ export const useProducts = (params: ProductListParams = {}): UseProductsResult =
     hasPrevious: false,
   });
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -64,17 +64,18 @@ export const useProducts = (params: ProductListParams = {}): UseProductsResult =
         setPagination({ totalCount: 0, currentPage: params.page || 1, totalPages: 1, hasNext: false, hasPrevious: false });
       }
     } catch (err) {
-      setError('상품을 불러오는 중 오류가 발생했습니다.');
+      const errorMessage = err instanceof Error ? err.message : '상품을 불러오는 중 오류가 발생했습니다.';
+      setError(errorMessage);
       setProducts([]);
       setPagination({ totalCount: 0, currentPage: params.page || 1, totalPages: 1, hasNext: false, hasPrevious: false });
     } finally {
       setLoading(false);
     }
-  };
+  }, [params.categoryId, params.subCategoryId, params.detailCategoryId, params.sort, params.page, params.size, params.search]);
 
   useEffect(() => {
     fetchProducts();
-  }, [params.categoryId, params.subCategoryId, params.detailCategoryId, params.sort, params.page, params.size, params.search]);
+  }, [fetchProducts]);
 
   return {
     products,

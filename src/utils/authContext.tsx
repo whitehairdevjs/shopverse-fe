@@ -1,17 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useEffect } from 'react';
-import { useAuthStore } from '../stores/authStore';
+import { useAuthStore, Member } from '../stores/authStore';
 import { LoginRequest, api, authUtils } from './api';
-
-// Member interface
-interface Member {
-  id?: string;
-  name?: string;
-  email?: string;
-  loginId?: string;
-  [key: string]: unknown;
-}
 
 // Login response interface
 interface LoginResponse {
@@ -63,7 +54,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const profileResponse = await api.member.getProfile();
           
           if (profileResponse.success && profileResponse.data) {
-            useAuthStore.getState().setMember(profileResponse.data as Member);
+            const responseData = profileResponse.data as Record<string, unknown>;
+            const memberData: Member = {
+              loginId: (responseData.loginId as string) || '',
+              name: (responseData.name as string) || '',
+            };
+            useAuthStore.getState().setMember(memberData);
             useAuthStore.getState().setAuthenticated(true);
           } else {
             useAuthStore.getState().setMember(null);

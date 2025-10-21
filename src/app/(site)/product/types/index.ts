@@ -1,9 +1,15 @@
 // 상품 정보 타입 정의
+export type ProductOptions = Record<string, string | number | boolean | null>;
+
 export interface Product {
   id: number;
+  variantId?: number;
   name: string;
   slug: string;
   subtitle?: string;
+  // JSON 형태로 내려오는 옵션 정보 (예: 색상, 용량 등)
+  // 백엔드에서 문자열(JSON 문자열)로 내려올 수도 있어 런타임 호환을 위해 string 허용
+  options?: ProductOptions | string | null;
   description?: string;
   shortDescription?: string;
   price: number;

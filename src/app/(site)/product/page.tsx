@@ -381,8 +381,9 @@ export default function ProductPage() {
                 ? Math.round(((product.comparePrice - product.price) / product.comparePrice) * 100)
                 : 0;
 
+              const compositeKey = product.variantId ? `${product.id}-${product.variantId}` : `${product.id}`;
               return (
-                <div key={product.id} className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+              <div key={compositeKey} className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden">
                   <div className="bg-gray-100 h-48 flex items-center justify-center text-4xl">
                     📦
                   </div>
@@ -391,6 +392,34 @@ export default function ProductPage() {
                     {product.subtitle && (
                       <p className="text-sm text-gray-600 mb-2 line-clamp-1">{product.subtitle}</p>
                     )}
+                    {/* 옵션 배지 렌더링 */}
+                    {(() => {
+                      if (!product.options) return null;
+                      let opts: Record<string, unknown> | null = null;
+                      if (typeof product.options === 'string') {
+                        try {
+                          const parsed = JSON.parse(product.options);
+                          if (parsed && typeof parsed === 'object') {
+                            opts = parsed as Record<string, unknown>;
+                          }
+                        } catch {
+                          opts = null;
+                        }
+                      } else if (typeof product.options === 'object') {
+                        opts = product.options as Record<string, unknown>;
+                      }
+                      if (!opts || Object.keys(opts).length === 0) return null;
+                      return (
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          {Object.entries(opts).map(([key, value]) => (
+                            <span key={key} className="inline-flex items-center rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700">
+                              <span className="text-gray-500 mr-1">{key}:</span>
+                              <span>{String(value)}</span>
+                            </span>
+                          ))}
+                        </div>
+                      );
+                    })()}
                     <div className="flex items-center gap-2 mb-3">
                       <span className="text-lg font-bold text-gray-900">
                         {formatPrice(product.price)}
